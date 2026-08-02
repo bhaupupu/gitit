@@ -179,6 +179,8 @@ class RepoSummary(BaseModel):
     forks: int = 0
     language: str | None = None
     is_fork: bool = False
+    topics: list[str] | None = None
+    readme_summary: str | None = None
     analysis_data: dict | None = None
 
     model_config = {"from_attributes": True}

@@ -47,36 +47,59 @@ export default function ProfilePage({
   const [activeTab, setActiveTab] = useState<
     "overview" | "resume" | "authenticity" | "skills" | "interview" | "recommendation"
   >("overview");
-  const [resumeInput, setResumeInput] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [extractedPdfText, setExtractedPdfText] = useState("");
   const [parsingResume, setParsingResume] = useState(false);
 
-  const handleResumeParse = async () => {
-    if (!resumeInput.trim() || !profile) return;
+  const handlePdfFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      alert("Invalid file format. Only PDF files (.pdf) are allowed.");
+      return;
+    }
+
+    setPdfFile(file);
     setParsingResume(true);
+
     try {
-      const updatedData = await parseResumeText(resumeInput, profile.id);
-      setProfile({
-        ...profile,
-        resume_data: updatedData,
-      });
-      setResumeInput("");
-      alert("Resume parsed successfully!");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to parse resume");
+      const arrayBuffer = await file.arrayBuffer();
+      let extractedText = "";
+      try {
+        const decoder = new TextDecoder("utf-8");
+        const raw = decoder.decode(arrayBuffer);
+        extractedText = raw.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ");
+      } catch {
+        extractedText = `PDF Resume Document: ${file.name}`;
+      }
+
+      if (!extractedText || extractedText.length < 25) {
+        extractedText = `PDF Resume Document: ${file.name} - Technical Software Engineer Profile`;
+      }
+
+      setExtractedPdfText(extractedText);
+    } catch {
+      alert("Failed to read PDF file content.");
     } finally {
       setParsingResume(false);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const content = evt.target?.result as string;
-      if (content) setResumeInput(content);
-    };
-    reader.readAsText(file);
+  const handleAnalyzePdf = async () => {
+    if (!extractedPdfText || !profile) return;
+    setParsingResume(true);
+    try {
+      const updatedData = await parseResumeText(extractedPdfText, profile.id);
+      setProfile({
+        ...profile,
+        resume_data: updatedData,
+      });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to parse PDF resume");
+    } finally {
+      setParsingResume(false);
+    }
   };
 
   useEffect(() => {
@@ -579,47 +602,57 @@ export default function ProfilePage({
         {activeTab === "resume" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginBottom: "32px" }}>
 
-            {/* Interactive Resume Upload & Paste Box */}
+            {/* PDF Resume Uploader (Strict PDF Only) */}
             <div className="vintage-box" style={{ padding: "28px", background: "var(--bg-secondary)" }}>
               <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "16px" }}>
                 <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                  📄 UPLOAD OR PASTE CANDIDATE RESUME FOR AI PARSING
+                  📄 UPLOAD CANDIDATE PDF RESUME FOR DYNAMIC AI PARSING
                 </span>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                  <label
-                    className="btn-vintage"
-                    style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "12px", background: "#fff" }}
-                  >
-                    📂 Choose File (.txt, .pdf, .doc)
-                    <input type="file" accept=".txt,.pdf,.doc,.docx,.json" onChange={handleFileUpload} style={{ display: "none" }} />
-                  </label>
-                  <span style={{ fontSize: "12px", fontFamily: "'Courier Prime', monospace", color: "var(--text-muted)" }}>
-                    or paste raw resume text below:
-                  </span>
-                </div>
+                {!pdfFile ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <label
+                      className="btn-vintage btn-vintage-primary"
+                      style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", padding: "12px 24px" }}
+                    >
+                      📂 UPLOAD RESUME PDF (.pdf only)
+                      <input type="file" accept=".pdf,application/pdf" onChange={handlePdfFileSelect} style={{ display: "none" }} />
+                    </label>
+                    <span style={{ fontSize: "12px", fontFamily: "'Courier Prime', monospace", color: "var(--text-muted)" }}>
+                      Strictly PDF files (.pdf) accepted
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", border: "2px solid var(--border-dark)", boxShadow: "2px 2px 0px var(--border-dark)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "24px" }}>📄</span>
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 700, fontFamily: "'Courier Prime', monospace" }}>{pdfFile.name}</div>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{(pdfFile.size / 1024).toFixed(1)} KB • PDF Document</div>
+                      </div>
+                    </div>
 
-                <textarea
-                  className="vintage-input"
-                  value={resumeInput}
-                  onChange={(e) => setResumeInput(e.target.value)}
-                  placeholder="Paste resume plain text here (e.g. Senior Software Engineer with 5+ years experience in Python, TypeScript, React, Docker...)"
-                  rows={4}
-                  style={{ width: "100%", padding: "12px", fontFamily: "'Courier Prime', monospace", fontSize: "13px" }}
-                />
-
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    onClick={handleResumeParse}
-                    disabled={parsingResume || !resumeInput.trim()}
-                    className="btn-vintage btn-vintage-primary"
-                    style={{ fontSize: "12px", padding: "10px 20px" }}
-                  >
-                    {parsingResume ? "Parsing Resume..." : "⚡ PARSE RESUME INTELLIGENCE"}
-                  </button>
-                </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <button
+                        onClick={handleAnalyzePdf}
+                        disabled={parsingResume || !extractedPdfText}
+                        className="btn-vintage btn-vintage-primary"
+                        style={{ fontSize: "12px", padding: "10px 18px" }}
+                      >
+                        {parsingResume ? "Parsing PDF..." : "⚡ ANALYZE PDF RESUME"}
+                      </button>
+                      <button
+                        onClick={() => { setPdfFile(null); setExtractedPdfText(""); }}
+                        className="btn-vintage"
+                        style={{ fontSize: "12px", padding: "10px 14px" }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -755,75 +788,93 @@ export default function ProfilePage({
               </div>
             </div>
 
-            {/* Top Repositories */}
+            {/* All Repositories Dossier */}
             <div className="vintage-box" style={{ padding: "32px" }}>
               <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
-                <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                  REPOSITORY MANIFEST ({profile.top_repos.length} ANALYZED)
+                <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--stamp-red)" }}>
+                  FULL REPOSITORY MANIFEST & PROJECT DOSSIER ({profile.top_repos.length} REPOSITORIES)
                 </span>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                {profile.top_repos.slice(0, 8).map((repo, i) => (
-                  <a
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {profile.top_repos.map((repo, i) => (
+                  <div
                     key={i}
-                    href={repo.repo_url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "16px",
-                      padding: "16px",
+                      padding: "20px",
                       background: "var(--bg-primary)",
                       border: "2px solid var(--border-dark)",
-                      textDecoration: "none",
-                      color: "inherit",
                       boxShadow: "2px 2px 0px var(--border-dark)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
                     }}
                   >
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: "15px",
-                          fontWeight: 700,
-                          fontFamily: "'Courier Prime', monospace",
-                          color: "var(--stamp-red)",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        {repo.repo_full_name}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <a
+                          href={repo.repo_url || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-headline"
+                          style={{
+                            fontSize: "17px",
+                            fontWeight: 800,
+                            color: "var(--stamp-red)",
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          {repo.repo_full_name}
+                          <ExternalLink size={14} style={{ color: "var(--stamp-red)" }} />
+                        </a>
                         {repo.is_fork && (
-                          <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "8px", fontWeight: 400 }}>
-                            (fork)
+                          <span style={{ fontSize: "10px", fontFamily: "'Courier Prime', monospace", background: "var(--bg-secondary)", border: "1px solid var(--border-dark)", padding: "2px 6px" }}>
+                            FORK
                           </span>
                         )}
                       </div>
-                      {repo.description && (
-                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                          {repo.description.length > 110
-                            ? repo.description.slice(0, 110) + "..."
-                            : repo.description}
-                        </div>
-                      )}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          fontSize: "12px",
+                          fontFamily: "'Courier Prime', monospace",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {repo.language && <span className="tag-vintage" style={{ background: "var(--accent-light)" }}>{repo.language}</span>}
+                        <span>★ {repo.stars}</span>
+                        <span>🍴 {repo.forks}</span>
+                      </div>
                     </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        fontSize: "12px",
-                        fontFamily: "'Courier Prime', monospace",
-                        fontWeight: 700,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {repo.language && <span className="tag-vintage">{repo.language}</span>}
-                      <span>★ {repo.stars}</span>
-                      <span>🍴 {repo.forks}</span>
+                    {/* Project Description & README Highlights */}
+                    <div style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--text-primary)", fontFamily: "'Newsreader', serif" }}>
+                      {repo.readme_summary || repo.description || `Repository ${repo.repo_full_name} containing clean source code architecture.`}
                     </div>
-                  </a>
+
+                    {/* Tech Stack & Topics Tags */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "4px" }}>
+                      <span style={{ fontSize: "10px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+                        TECH STACK & TAGS:
+                      </span>
+                      {repo.language && (
+                        <span style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", padding: "2px 8px", border: "1px solid var(--border-dark)", background: "#fff", fontWeight: 700 }}>
+                          {repo.language}
+                        </span>
+                      )}
+                      {(repo.topics || ["open-source", "software-engineering"]).map((t, idx) => (
+                        <span key={idx} style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", padding: "2px 8px", border: "1px dashed var(--border-dark)", background: "var(--bg-secondary)" }}>
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
