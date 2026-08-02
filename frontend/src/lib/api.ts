@@ -398,7 +398,26 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
 
   const parsedResumeData = await parseResumeText(extractedText);
 
-  let candName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+  // Real email & phone from extracted text
+  const emailMatch = extractedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+  const phoneMatch = extractedText.match(/(?:\+?\d{1,3}[ -]?)?\(?\d{3}\)?[ -]?\d{3}[ -]?\d{4}|\+?\d{10,12}/);
+
+  const extractedEmail = emailMatch ? emailMatch[0] : null;
+  const extractedPhone = phoneMatch ? phoneMatch[0] : null;
+
+  // Real Candidate Name
+  let candName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").replace(/\b(resume|cv)\b/gi, "").trim();
+  if (candName.length > 1) {
+    candName = candName.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  }
+  if (!candName || candName.toLowerCase() === "resume") {
+    if (extractedEmail) {
+      const prefix = extractedEmail.split("@")[0].replace(/[._0-9]/g, " ").trim();
+      candName = prefix.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    } else {
+      candName = "Candidate Profile";
+    }
+  }
 
   const newResume: ParsedResume = {
     id: `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -408,8 +427,8 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
     file_url: dataUrl,
     candidate_name: candName,
     github_username: null,
-    email: "candidate@example.com",
-    phone: "+1 (555) 019-2831",
+    email: extractedEmail,
+    phone: extractedPhone,
     experience_years: parsedResumeData.resume_score ? Math.round((parsedResumeData.resume_score / 2) * 10) / 10 : 4.5,
     skills: parsedResumeData.skills_extracted,
     work_history: parsedResumeData.experience.map(e => ({
