@@ -195,38 +195,7 @@ export default function AdaptiveInterviewWorkspace({ questionsData, candidateNam
             />
           </div>
 
-          {/* Real-time Feedback Buttons */}
-          <div>
-            <div style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, marginBottom: "10px", textTransform: "uppercase", color: "var(--stamp-red)" }}>
-              SELECT CANDIDATE ANSWER ACCURACY TO GENERATE ADAPTIVE FOLLOW-UP:
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                onClick={() => handleEvaluate("correct")}
-                disabled={evaluating}
-                className="btn-vintage"
-                style={{ flex: 1, background: "#2b8a3e", color: "#fff", padding: "12px", fontSize: "13px" }}
-              >
-                ✓ CORRECT (ADVANCE / HARDER PROBE)
-              </button>
-              <button
-                onClick={() => handleEvaluate("partially_correct")}
-                disabled={evaluating}
-                className="btn-vintage"
-                style={{ flex: 1, background: "#e67e22", color: "#fff", padding: "12px", fontSize: "13px" }}
-              >
-                △ PARTIALLY CORRECT (EDGE CASE PROBE)
-              </button>
-              <button
-                onClick={() => handleEvaluate("incorrect")}
-                disabled={evaluating}
-                className="btn-vintage"
-                style={{ flex: 1, background: "var(--stamp-red)", color: "#fff", padding: "12px", fontSize: "13px" }}
-              >
-                ✗ INCORRECT (EASIER / BASELINE PROBE)
-              </button>
-            </div>
-          </div>
+
 
           {/* Adaptive AI Result Card */}
           {adaptiveResult && (

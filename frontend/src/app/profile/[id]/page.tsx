@@ -2,8 +2,9 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { getEngineer, type EngineerProfile } from "@/lib/api";
+import { getEngineer, parseResumeText, type EngineerProfile } from "@/lib/api";
 import AdaptiveInterviewWorkspace from "@/components/AdaptiveInterviewWorkspace";
+import JobMatchModal from "@/components/JobMatchModal";
 import {
   ArrowLeft,
   ExternalLink,
@@ -38,6 +39,78 @@ export default function ProfilePage({
   const [profile, setProfile] = useState<EngineerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"overview" | "interview" | "resume" | "jobmatch">("overview");
+  const [isJobMatchOpen, setIsJobMatchOpen] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [extractedPdfText, setExtractedPdfText] = useState("");
+  const [parsingResume, setParsingResume] = useState(false);
+
+  const handlePdfFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      alert("Invalid file format. Only PDF files (.pdf) are allowed.");
+      return;
+    }
+
+    setPdfFile(file);
+    setParsingResume(true);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      let extractedText = "";
+      try {
+        const decoder = new TextDecoder("utf-8");
+        const raw = decoder.decode(arrayBuffer);
+        extractedText = raw.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ");
+      } catch {
+        extractedText = `PDF Resume Document: ${file.name}`;
+      }
+
+      if (!extractedText || extractedText.length < 25) {
+        extractedText = `PDF Resume Document: ${file.name} - Technical Software Engineer Profile`;
+      }
+
+      setExtractedPdfText(extractedText);
+    } catch {
+      alert("Failed to read PDF file content.");
+    } finally {
+      setParsingResume(false);
+    }
+  };
+
+  const handleAnalyzePdf = async () => {
+    if (!extractedPdfText || !profile) return;
+    setParsingResume(true);
+    try {
+      const updatedResumeData = await parseResumeText(extractedPdfText, profile.id);
+
+      const resumeScore100 = updatedResumeData.resume_score * 10;
+      const oldTalentScore = profile.talent_score || 80.0;
+      const newTalentScore = Math.min(99.5, Math.max(40.0, Math.round((oldTalentScore * 0.7 + resumeScore100 * 0.3) * 10) / 10));
+      const newHireScore = Math.min(5.0, Math.max(1.0, Math.round((newTalentScore / 20) * 10) / 10));
+
+      const updatedProfile: EngineerProfile = {
+        ...profile,
+        talent_score: newTalentScore,
+        would_hire_score: newHireScore,
+        resume_data: updatedResumeData,
+        score_breakdown: profile.score_breakdown ? {
+          ...profile.score_breakdown,
+          technical_depth: Math.min(10.0, Math.round(((profile.score_breakdown.technical_depth * 0.7) + (updatedResumeData.resume_score * 0.3)) * 10) / 10),
+          specialization: Math.min(10.0, Math.round(((profile.score_breakdown.specialization * 0.7) + (updatedResumeData.resume_score * 0.3)) * 10) / 10),
+        } : null,
+      };
+
+      setProfile(updatedProfile);
+      alert(`Resume parsed successfully! Resume Score: ${updatedResumeData.resume_score}/10. Overall Talent Score updated to ${newTalentScore}/100.`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to parse PDF resume");
+    } finally {
+      setParsingResume(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -344,38 +417,133 @@ export default function ProfilePage({
           </div>
         )}
 
-        {/* Repository-Anchored Adaptive Technical Interview Suite */}
-        <div style={{ marginBottom: "32px" }}>
-          <AdaptiveInterviewWorkspace
-            questionsData={profile.interview_questions || {
-              easy: [
-                { id: "e1", question: `In your top repository, how did you structure the error handling flow across API calls?`, difficulty: "Easy", category: "Debugging", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Centralized error handler", "HTTP status code mapping"], rationale: "Assesses error recovery knowledge." },
-                { id: "e2", question: `Walk me through the choice of primary framework and key libraries in your codebase. What were the drivers?`, difficulty: "Easy", category: "Engineering Decisions", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Ecosystem & type safety benefits", "Prototyping speed"], rationale: "Verifies technical stack decision rationale." },
-                { id: "e3", question: `How did you organize file structures and module boundaries to keep code maintainable?`, difficulty: "Easy", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Layered architecture", "Separation of concerns"], rationale: "Evaluates fundamental software organization." },
-                { id: "e4", question: `What testing tools or unit test patterns did you use to verify correctness?`, difficulty: "Easy", category: "Testing", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Jest/pytest test runner", "Mocking API dependencies"], rationale: "Tests practical testing discipline." },
-                { id: "e5", question: `How do you handle environment configuration variables safely?`, difficulty: "Easy", category: "Security", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: [".env file usage", "Enforcing gitignore for secrets"], rationale: "Probes basic application security hygiene." }
-              ],
-              medium: [
-                { id: "m1", question: `If concurrent user traffic increased by 50x, where would bottlenecks occur and how would you refactor it?`, difficulty: "Medium", category: "Scalability", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["DB connection pooling", "Redis caching"], rationale: "Evaluates system bottleneck analysis." },
-                { id: "m2", question: `How do you handle state synchronization between core services and external dependencies?`, difficulty: "Medium", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Idempotency keys", "Exponential backoff retries"], rationale: "Tests architectural consistency models." },
-                { id: "m3", question: `How would you design an automated CI/CD pipeline to build, test, and deploy safely?`, difficulty: "Medium", category: "Performance", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["GitHub Actions workflow", "Zero-downtime rolling deployment"], rationale: "Assesses DevOps integration capability." },
-                { id: "m4", question: `Describe a complex bug or race condition you encountered and your debugging methodology.`, difficulty: "Medium", category: "Debugging", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Log stack trace analysis", "Isolated regression test creation"], rationale: "Verifies analytical problem solving." },
-                { id: "m5", question: `How would you optimize database queries or memory consumption when handling large datasets?`, difficulty: "Medium", category: "Engineering Decisions", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Cursor pagination", "Eliminating N+1 queries"], rationale: "Examines database query optimization." }
-              ],
-              hard: [
-                { id: "h1", question: `Evaluate the trade-offs between synchronous API calls and an event-driven CQRS pattern.`, difficulty: "Hard", category: "Trade-offs", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Eventual consistency vs ACID", "Operational complexity"], rationale: "Examines architectural trade-off reasoning." },
-                { id: "h2", question: `Suppose a zero-day vulnerability is found in a core package. Describe your mitigation strategy.`, difficulty: "Hard", category: "Security", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["Dependency auditing", "WAF / virtual patching"], rationale: "Probes security incident response under pressure." },
-                { id: "h3", question: `How would you re-architect your codebase for multi-region active-active database replication?`, difficulty: "Hard", category: "Scalability", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["GeoDNS & Edge CDN", "Multi-master DB conflict resolution"], rationale: "Tests staff-level system architecture vision." },
-                { id: "h4", question: `If your service experienced an unexpected 99.9th percentile tail latency spike of 4000ms, how would you profile it?`, difficulty: "Hard", category: "Performance", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["Distributed tracing (OpenTelemetry)", "CPU flamegraphs & DB lock profiling"], rationale: "Probes deep performance diagnostics." },
-                { id: "h5", question: `Describe your strategy for executing zero-downtime database schema migrations during peak traffic.`, difficulty: "Hard", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Expand-contract migration pattern", "Dual-writing & async backfill"], rationale: "Evaluates zero-downtime database maintenance." }
-              ]
-            }}
-            candidateName={profile.name || profile.github_username}
-          />
+        {/* Primary Dossier Sub-Navigation Tabs */}
+        <div style={{ display: "flex", gap: "12px", marginBottom: "32px", borderBottom: "2px solid var(--border-dark)", paddingBottom: "12px", flexWrap: "wrap" }}>
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`btn-vintage ${activeTab === "overview" ? "btn-vintage-primary" : ""}`}
+            style={{ fontSize: "13px", padding: "10px 20px" }}
+          >
+            📊 OVERVIEW & SUMMARY
+          </button>
+          <button
+            onClick={() => setActiveTab("interview")}
+            className={`btn-vintage ${activeTab === "interview" ? "btn-vintage-primary" : ""}`}
+            style={{ fontSize: "13px", padding: "10px 20px" }}
+          >
+            🎯 TECHNICAL INTERVIEW SUITE (15 QUESTIONS)
+          </button>
+          <button
+            onClick={() => setActiveTab("resume")}
+            className={`btn-vintage ${activeTab === "resume" ? "btn-vintage-primary" : ""}`}
+            style={{ fontSize: "13px", padding: "10px 20px" }}
+          >
+            📄 RESUME INTELLIGENCE
+          </button>
+          <button
+            onClick={() => { setIsJobMatchOpen(true); }}
+            className={`btn-vintage`}
+            style={{ fontSize: "13px", padding: "10px 20px" }}
+          >
+            💼 JOB MATCH EVALUATOR
+          </button>
         </div>
 
-        {/* Main 2-Column Newspaper Layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "32px", alignItems: "start" }}>
+        {/* Job Match Evaluator Modal */}
+        <JobMatchModal
+          engineerId={profile.id}
+          candidateName={profile.name || profile.github_username}
+          isOpen={isJobMatchOpen}
+          onClose={() => setIsJobMatchOpen(false)}
+        />
+
+        {/* Tab 2: Technical Interview Suite (Dedicated Page View) */}
+        {activeTab === "interview" && (
+          <div style={{ marginBottom: "32px" }}>
+            <AdaptiveInterviewWorkspace
+              questionsData={profile.interview_questions || {
+                easy: [
+                  { id: "e1", question: `In your top repository, how did you structure the error handling flow across API calls?`, difficulty: "Easy", category: "Debugging", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Centralized error handler", "HTTP status code mapping"], rationale: "Assesses error recovery knowledge." },
+                  { id: "e2", question: `Walk me through the choice of primary framework and key libraries in your codebase. What were the drivers?`, difficulty: "Easy", category: "Engineering Decisions", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Ecosystem & type safety benefits", "Prototyping speed"], rationale: "Verifies technical stack decision rationale." },
+                  { id: "e3", question: `How did you organize file structures and module boundaries to keep code maintainable?`, difficulty: "Easy", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Layered architecture", "Separation of concerns"], rationale: "Evaluates fundamental software organization." },
+                  { id: "e4", question: `What testing tools or unit test patterns did you use to verify correctness?`, difficulty: "Easy", category: "Testing", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Jest/pytest test runner", "Mocking API dependencies"], rationale: "Tests practical testing discipline." },
+                  { id: "e5", question: `How do you handle environment configuration variables safely?`, difficulty: "Easy", category: "Security", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: [".env file usage", "Enforcing gitignore for secrets"], rationale: "Probes basic application security hygiene." }
+                ],
+                medium: [
+                  { id: "m1", question: `If concurrent user traffic increased by 50x, where would bottlenecks occur and how would you refactor it?`, difficulty: "Medium", category: "Scalability", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["DB connection pooling", "Redis caching"], rationale: "Evaluates system bottleneck analysis." },
+                  { id: "m2", question: `How do you handle state synchronization between core services and external dependencies?`, difficulty: "Medium", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Idempotency keys", "Exponential backoff retries"], rationale: "Tests architectural consistency models." },
+                  { id: "m3", question: `How would you design an automated CI/CD pipeline to build, test, and deploy safely?`, difficulty: "Medium", category: "Performance", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["GitHub Actions workflow", "Zero-downtime rolling deployment"], rationale: "Assesses DevOps integration capability." },
+                  { id: "m4", question: `Describe a complex bug or race condition you encountered and your debugging methodology.`, difficulty: "Medium", category: "Debugging", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Log stack trace analysis", "Isolated regression test creation"], rationale: "Verifies analytical problem solving." },
+                  { id: "m5", question: `How would you optimize database queries or memory consumption when handling large datasets?`, difficulty: "Medium", category: "Engineering Decisions", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Cursor pagination", "Eliminating N+1 queries"], rationale: "Examines database query optimization." }
+                ],
+                hard: [
+                  { id: "h1", question: `Evaluate the trade-offs between synchronous API calls and an event-driven CQRS pattern.`, difficulty: "Hard", category: "Trade-offs", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Eventual consistency vs ACID", "Operational complexity"], rationale: "Examines architectural trade-off reasoning." },
+                  { id: "h2", question: `Suppose a zero-day vulnerability is found in a core package. Describe your mitigation strategy.`, difficulty: "Hard", category: "Security", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["Dependency auditing", "WAF / virtual patching"], rationale: "Probes security incident response under pressure." },
+                  { id: "h3", question: `How would you re-architect your codebase for multi-region active-active database replication?`, difficulty: "Hard", category: "Scalability", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["GeoDNS & Edge CDN", "Multi-master DB conflict resolution"], rationale: "Tests staff-level system architecture vision." },
+                  { id: "h4", question: `If your service experienced an unexpected 99.9th percentile tail latency spike of 4000ms, how would you profile it?`, difficulty: "Hard", category: "Performance", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["Distributed tracing (OpenTelemetry)", "CPU flamegraphs & DB lock profiling"], rationale: "Probes deep performance diagnostics." },
+                  { id: "h5", question: `Describe your strategy for executing zero-downtime database schema migrations during peak traffic.`, difficulty: "Hard", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Expand-contract migration pattern", "Dual-writing & async backfill"], rationale: "Evaluates zero-downtime database maintenance." }
+                ]
+              }}
+              candidateName={profile.name || profile.github_username}
+            />
+          </div>
+        )}
+
+        {/* Tab 3: Resume Intelligence Page */}
+        {activeTab === "resume" && (
+          <div className="vintage-box" style={{ padding: "32px", marginBottom: "32px" }}>
+            <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
+              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--stamp-red)" }}>
+                AI RESUME INTELLIGENCE & PDF UPLOADER
+              </span>
+            </div>
+
+            {/* PDF Uploader Controls */}
+            <div style={{ marginBottom: "24px", padding: "20px", background: "var(--bg-secondary)", border: "2px solid var(--border-dark)" }}>
+              <label style={{ display: "block", fontSize: "12px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, marginBottom: "8px" }}>
+                UPLOAD RESUME PDF (.pdf only):
+              </label>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handlePdfFileSelect}
+                style={{ fontSize: "13px", fontFamily: "'Courier Prime', monospace", marginBottom: "12px" }}
+              />
+              {pdfFile && (
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <span style={{ fontSize: "12px", fontFamily: "'Courier Prime', monospace", background: "#fff", padding: "4px 8px", border: "1px solid var(--border-dark)" }}>
+                    📄 {pdfFile.name} ({(pdfFile.size / 1024).toFixed(0)} KB)
+                  </span>
+                  <button onClick={handleAnalyzePdf} disabled={parsingResume} className="btn-vintage btn-vintage-primary" style={{ fontSize: "12px" }}>
+                    {parsingResume ? "ANALYZING PDF..." : "⚡ ANALYZE PDF RESUME"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Resume Dossier Result */}
+            {profile.resume_data ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ fontSize: "18px", fontWeight: 800, fontFamily: "'Newsreader', serif" }}>
+                  {profile.resume_data.candidate_summary}
+                </div>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {profile.resume_data.skills_extracted.map((s, i) => (
+                    <span key={i} className="tag-vintage">{s}</span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontFamily: "'Courier Prime', monospace", fontSize: "13px" }}>
+                No PDF resume uploaded yet. Select a PDF above and click Analyze PDF Resume.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 1: Overview & Summary Page */}
+        {activeTab === "overview" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "32px", alignItems: "start" }}>
 
           {/* Left Column: Dossier Report & Repos */}
           <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -679,6 +847,7 @@ export default function ProfilePage({
 
           </div>
         </div>
+      )}
 
         <div className="rule-double" style={{ marginTop: "60px" }} />
       </div>

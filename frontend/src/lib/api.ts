@@ -49,6 +49,7 @@ export interface EngineerProfile extends EngineerCard {
   domains: string[] | null;
   gaming_warnings: string[] | null;
   interview_questions?: InterviewQuestionsData | null;
+  resume_data?: ResumeData | null;
   score_breakdown: ScoreBreakdown | null;
   top_repos: RepoSummary[];
   created_at: string | null;
