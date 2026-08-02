@@ -384,6 +384,45 @@ class PersonalizedInterviewAgent:
                     "Team familiarity or speed of prototyping"
                 ],
                 "rationale": "Verifies technical decision rationale behind tech stack selection."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"How did you organize file structures and module boundaries in '{top_repo}' to keep code maintainable?",
+                "difficulty": "Easy",
+                "category": "Architecture",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "Layered architecture (controllers, services, repositories)",
+                    "Separation of concerns and reusable helper modules",
+                    "Clean import hierarchy"
+                ],
+                "rationale": "Evaluates fundamental software organization and code readability."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"What testing tools or unit test patterns did you use in '{top_repo}' to verify correctness?",
+                "difficulty": "Easy",
+                "category": "Testing",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "Test frameworks (pytest, Jest, Vitest, Go test)",
+                    "Mocking external API dependencies or database calls",
+                    "Automated test execution in local workflow"
+                ],
+                "rationale": "Tests practical testing discipline and familiarity with test runners."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"How do you handle environment configuration variables (such as API keys or DB URLs) in '{top_repo}' safely?",
+                "difficulty": "Easy",
+                "category": "Security",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "Use of .env files and environment variable injection",
+                    "Strict gitignore enforcement to prevent secret leaks",
+                    "Config validation on application startup"
+                ],
+                "rationale": "Probes basic application security hygiene and secret management."
             }
         ]
 
@@ -413,6 +452,45 @@ class PersonalizedInterviewAgent:
                     "Retry mechanisms with exponential backoff"
                 ],
                 "rationale": "Tests practical architectural understanding of distributed data flow."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"In '{second_repo}', how would you design an automated CI/CD pipeline to build, test, and deploy code changes safely?",
+                "difficulty": "Medium",
+                "category": "Performance",
+                "repo_context": f"Repository: {second_repo}",
+                "ideal_answer_points": [
+                    "GitHub Actions or CI pipeline matrix steps",
+                    "Staging vs production environment isolation",
+                    "Zero-downtime rolling deployment strategies"
+                ],
+                "rationale": "Assesses DevOps integration capability and deployment automation knowledge."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"Describe a complex bug or race condition you encountered in '{top_repo}' and walk through your step-by-step debugging methodology.",
+                "difficulty": "Medium",
+                "category": "Debugging",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "Log inspection and stack trace reproduction",
+                    "Isolated unit test creation to isolate the bug",
+                    "Root cause fix and regression test prevention"
+                ],
+                "rationale": "Verifies analytical problem-solving and systematic debugging skill under real scenarios."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"How would you optimize database queries or memory consumption in '{top_repo}' when handling large datasets?",
+                "difficulty": "Medium",
+                "category": "Engineering Decisions",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "Pagination and cursor-based data streaming",
+                    "Database index optimization and N+1 query elimination",
+                    "In-memory caching and garbage collection awareness"
+                ],
+                "rationale": "Examines performance profiling and database query optimization knowledge."
             }
         ]
 
@@ -432,7 +510,7 @@ class PersonalizedInterviewAgent:
             },
             {
                 "id": str(uuid.uuid4())[:8],
-                "question": f"In '{top_repo}', evaluate the performance trade-offs between your current database query patterns and a event-driven CQRS model. When would you make that shift?",
+                "question": f"In '{top_repo}', evaluate the performance trade-offs between your current database query patterns and an event-driven CQRS model. When would you make that shift?",
                 "difficulty": "Hard",
                 "category": "Trade-offs",
                 "repo_context": f"Repository: {top_repo}",
@@ -442,6 +520,45 @@ class PersonalizedInterviewAgent:
                     "Eventual consistency trade-offs vs synchronous ACID transactions"
                 ],
                 "rationale": "Examines high-level engineering maturity and architectural trade-off reasoning."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"How would you re-architect '{top_repo}' to support multi-region high availability with active-active database replication and low latency global routing?",
+                "difficulty": "Hard",
+                "category": "Scalability",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "DNS routing (latency-based / GeoDNS) and Edge CDN caching",
+                    "Multi-master DB replication and write conflict resolution",
+                    "Circuit breakers and failover mechanisms"
+                ],
+                "rationale": "Tests staff-level system architecture and global cloud scalability vision."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"If '{second_repo}' experienced an unexpected 99.9th percentile tail latency spike of 4000ms under load, how would you instrument profiling tools to pinpoint the root cause?",
+                "difficulty": "Hard",
+                "category": "Performance",
+                "repo_context": f"Repository: {second_repo}",
+                "ideal_answer_points": [
+                    "Distributed tracing (OpenTelemetry / Jaeger)",
+                    "CPU and memory flamegraphs / heap profiling",
+                    "Database lock contention and slow query log analysis"
+                ],
+                "rationale": "Probes deep system performance diagnostics and distributed tracing experience."
+            },
+            {
+                "id": str(uuid.uuid4())[:8],
+                "question": f"Describe your strategy for executing zero-downtime database schema migrations on '{top_repo}' while serving active read/write traffic.",
+                "difficulty": "Hard",
+                "category": "Architecture",
+                "repo_context": f"Repository: {top_repo}",
+                "ideal_answer_points": [
+                    "Expand and contract migration pattern (dual-writing)",
+                    "Backward-compatible API versioning",
+                    "Asynchronous data backfill scripts before dropping old columns"
+                ],
+                "rationale": "Evaluates production database maintenance and risk management expertise."
             }
         ]
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { getEngineer, type EngineerProfile } from "@/lib/api";
+import { getEngineer, parseResumeText, type EngineerProfile } from "@/lib/api";
 import JobMatchModal from "@/components/JobMatchModal";
 import AdaptiveInterviewWorkspace from "@/components/AdaptiveInterviewWorkspace";
 import {
@@ -47,6 +47,37 @@ export default function ProfilePage({
   const [activeTab, setActiveTab] = useState<
     "overview" | "resume" | "authenticity" | "skills" | "interview" | "recommendation"
   >("overview");
+  const [resumeInput, setResumeInput] = useState("");
+  const [parsingResume, setParsingResume] = useState(false);
+
+  const handleResumeParse = async () => {
+    if (!resumeInput.trim() || !profile) return;
+    setParsingResume(true);
+    try {
+      const updatedData = await parseResumeText(resumeInput, profile.id);
+      setProfile({
+        ...profile,
+        resume_data: updatedData,
+      });
+      setResumeInput("");
+      alert("Resume parsed successfully!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to parse resume");
+    } finally {
+      setParsingResume(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const content = evt.target?.result as string;
+      if (content) setResumeInput(content);
+    };
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     (async () => {
@@ -545,13 +576,60 @@ export default function ProfilePage({
         )}
 
         {/* Tab 5: Resume Intelligence & Skill Matrix */}
-        {activeTab === "resume" && profile.resume_data && (
-          <div className="vintage-box" style={{ padding: "32px", marginBottom: "32px" }}>
-            <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
-              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                RESUME INTELLIGENCE AGENT • SKILL MATRIX & EXTRACTED EXPERIENCE
-              </span>
+        {activeTab === "resume" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginBottom: "32px" }}>
+
+            {/* Interactive Resume Upload & Paste Box */}
+            <div className="vintage-box" style={{ padding: "28px", background: "var(--bg-secondary)" }}>
+              <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "16px" }}>
+                <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
+                  📄 UPLOAD OR PASTE CANDIDATE RESUME FOR AI PARSING
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                  <label
+                    className="btn-vintage"
+                    style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "12px", background: "#fff" }}
+                  >
+                    📂 Choose File (.txt, .pdf, .doc)
+                    <input type="file" accept=".txt,.pdf,.doc,.docx,.json" onChange={handleFileUpload} style={{ display: "none" }} />
+                  </label>
+                  <span style={{ fontSize: "12px", fontFamily: "'Courier Prime', monospace", color: "var(--text-muted)" }}>
+                    or paste raw resume text below:
+                  </span>
+                </div>
+
+                <textarea
+                  className="vintage-input"
+                  value={resumeInput}
+                  onChange={(e) => setResumeInput(e.target.value)}
+                  placeholder="Paste resume plain text here (e.g. Senior Software Engineer with 5+ years experience in Python, TypeScript, React, Docker...)"
+                  rows={4}
+                  style={{ width: "100%", padding: "12px", fontFamily: "'Courier Prime', monospace", fontSize: "13px" }}
+                />
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={handleResumeParse}
+                    disabled={parsingResume || !resumeInput.trim()}
+                    className="btn-vintage btn-vintage-primary"
+                    style={{ fontSize: "12px", padding: "10px 20px" }}
+                  >
+                    {parsingResume ? "Parsing Resume..." : "⚡ PARSE RESUME INTELLIGENCE"}
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {profile.resume_data && (
+              <div className="vintage-box" style={{ padding: "32px" }}>
+                <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
+                  <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
+                    RESUME INTELLIGENCE AGENT • SKILL MATRIX & EXTRACTED EXPERIENCE
+                  </span>
+                </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <div>
@@ -595,6 +673,8 @@ export default function ProfilePage({
             </div>
           </div>
         )}
+      </div>
+    )}
 
         {/* Tab 0 / Default: Main 2-Column Newspaper Layout (Overview) */}
         {activeTab === "overview" && (
