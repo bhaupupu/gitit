@@ -2,8 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { getEngineer, parseResumeText, type EngineerProfile } from "@/lib/api";
-import JobMatchModal from "@/components/JobMatchModal";
+import { getEngineer, type EngineerProfile } from "@/lib/api";
 import AdaptiveInterviewWorkspace from "@/components/AdaptiveInterviewWorkspace";
 import {
   ArrowLeft,
@@ -27,10 +26,6 @@ import {
   Layers,
   GitFork,
   FileText,
-  Target,
-  FileSpreadsheet,
-  ShieldCheck,
-  Cpu,
 } from "lucide-react";
 
 export default function ProfilePage({
@@ -43,91 +38,6 @@ export default function ProfilePage({
   const [profile, setProfile] = useState<EngineerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isJobMatchOpen, setIsJobMatchOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "resume" | "authenticity" | "skills" | "interview" | "recommendation"
-  >("overview");
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [extractedPdfText, setExtractedPdfText] = useState("");
-  const [parsingResume, setParsingResume] = useState(false);
-
-  const handlePdfFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
-      alert("Invalid file format. Only PDF files (.pdf) are allowed.");
-      return;
-    }
-
-    setPdfFile(file);
-    setParsingResume(true);
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      let extractedText = "";
-      try {
-        const decoder = new TextDecoder("utf-8");
-        const raw = decoder.decode(arrayBuffer);
-        extractedText = raw.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ");
-      } catch {
-        extractedText = `PDF Resume Document: ${file.name}`;
-      }
-
-      if (!extractedText || extractedText.length < 25) {
-        extractedText = `PDF Resume Document: ${file.name} - Technical Software Engineer Profile`;
-      }
-
-      setExtractedPdfText(extractedText);
-    } catch {
-      alert("Failed to read PDF file content.");
-    } finally {
-      setParsingResume(false);
-    }
-  };
-
-  const handleAnalyzePdf = async () => {
-    if (!extractedPdfText || !profile) return;
-    setParsingResume(true);
-    try {
-      const updatedResumeData = await parseResumeText(extractedPdfText, profile.id);
-
-      // Blend Resume Score into Composite Talent Score (70% Repo Code + 30% Resume Score)
-      const resumeScore100 = updatedResumeData.resume_score * 10;
-      const oldTalentScore = profile.talent_score || 80.0;
-      const newTalentScore = Math.min(99.5, Math.max(40.0, Math.round((oldTalentScore * 0.7 + resumeScore100 * 0.3) * 10) / 10));
-      const newHireScore = Math.min(5.0, Math.max(1.0, Math.round((newTalentScore / 20) * 10) / 10));
-
-      const newVerdict = newTalentScore >= 88.0 ? "Strong Hire" : newTalentScore >= 75.0 ? "Hire" : newTalentScore >= 60.0 ? "Borderline" : "No Hire";
-
-      const updatedProfile: EngineerProfile = {
-        ...profile,
-        talent_score: newTalentScore,
-        would_hire_score: newHireScore,
-        resume_data: updatedResumeData,
-        score_breakdown: profile.score_breakdown ? {
-          ...profile.score_breakdown,
-          technical_depth: Math.min(10.0, Math.round(((profile.score_breakdown.technical_depth * 0.7) + (updatedResumeData.resume_score * 0.3)) * 10) / 10),
-          specialization: Math.min(10.0, Math.round(((profile.score_breakdown.specialization * 0.7) + (updatedResumeData.resume_score * 0.3)) * 10) / 10),
-        } : null,
-        hiring_recommendation: profile.hiring_recommendation ? {
-          ...profile.hiring_recommendation,
-          recommendation: newVerdict,
-          overall_fit: `${newVerdict} (${newTalentScore}/100 - Integrated Code & Resume Analysis)`,
-          confidence_score: Math.min(98.0, (profile.hiring_recommendation.confidence_score || 85.0) + 5.0),
-          final_summary: `VERDICT: ${newVerdict}. Integrated evaluation combining GitHub repository evidence and uploaded PDF resume score (${updatedResumeData.resume_score}/10) yields a composite Overall Talent Score of ${newTalentScore}/100.`
-        } : null,
-      };
-
-      setProfile(updatedProfile);
-
-      alert(`Resume parsed successfully! Resume Score: ${updatedResumeData.resume_score}/10. Overall Talent Score updated to ${newTalentScore}/100.`);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to parse PDF resume");
-    } finally {
-      setParsingResume(false);
-    }
-  };
 
   useEffect(() => {
     (async () => {
@@ -237,86 +147,18 @@ export default function ProfilePage({
             </span>
           )}
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            onClick={() => setIsJobMatchOpen(true)}
-            style={{
-              padding: "6px 14px",
-              background: "var(--stamp-red)",
-              color: "white",
-              border: "2px solid var(--border-dark)",
-              boxShadow: "2px 2px 0px var(--border-dark)",
-              fontFamily: "'Courier Prime', monospace",
-              fontSize: "11px",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <Target size={14} /> MATCH WITH JD
-          </button>
-          <a
-            href={`https://github.com/${profile.github_username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-vintage"
-            style={{ fontSize: "11px", textDecoration: "none", padding: "6px 14px" }}
-          >
-            VIEW GITHUB ↗
-          </a>
-        </div>
+        <a
+          href={`https://github.com/${profile.github_username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-vintage"
+          style={{ fontSize: "11px", textDecoration: "none", padding: "6px 14px" }}
+        >
+          VIEW GITHUB ↗
+        </a>
       </header>
 
-      <div className="rule-double" style={{ maxWidth: "1280px", margin: "0 auto 16px" }} />
-
-      {/* Navigation Tabs for Co-Pilot Experience */}
-      <nav
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto 24px",
-          padding: "0 48px",
-          display: "flex",
-          gap: "10px",
-          flexWrap: "wrap",
-        }}
-      >
-        {[
-          { id: "overview", label: "[ OVERVIEW & SUMMARY ]", icon: FileText },
-          { id: "recommendation", label: "[ HIRING RECOMMENDATION ]", icon: Award },
-          { id: "authenticity", label: "[ PROJECT AUTHENTICITY ]", icon: ShieldCheck },
-          { id: "skills", label: "[ 10-DOMAIN SKILLS ]", icon: Cpu },
-          { id: "interview", label: "[ ADAPTIVE INTERVIEW ]", icon: Sparkles },
-          { id: "resume", label: "[ RESUME INTELLIGENCE ]", icon: FileSpreadsheet },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              style={{
-                padding: "8px 14px",
-                border: "2px solid var(--border-dark)",
-                background: isActive ? "var(--border-dark)" : "var(--bg-card)",
-                color: isActive ? "white" : "var(--text-primary)",
-                fontFamily: "'Courier Prime', monospace",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: isActive ? "3px 3px 0px var(--stamp-red)" : "2px 2px 0px var(--border-dark)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <Icon size={14} /> {tab.label}
-            </button>
-          );
-        })}
-      </nav>
+      <div className="rule-double" style={{ maxWidth: "1280px", margin: "0 auto 32px" }} />
 
       {/* Main Dossier Container */}
       <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 48px 80px" }}>
@@ -463,282 +305,77 @@ export default function ProfilePage({
           </div>
         </div>
 
-        {/* Job Match Modal */}
-        <JobMatchModal
-          engineerId={profile.id}
-          candidateName={profile.name || profile.github_username}
-          isOpen={isJobMatchOpen}
-          onClose={() => setIsJobMatchOpen(false)}
-        />
-
-        {/* Tab 1: Hiring Recommendation Agent Report */}
-        {activeTab === "recommendation" && profile.hiring_recommendation && (
-          <div className="vintage-box" style={{ padding: "32px", marginBottom: "32px" }}>
-            <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "16px" }}>
-              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                HIRING RECOMMENDATION AGENT • FINAL VERDICT REPORT
-              </span>
+        {/* Quality Signals / Warnings Banner */}
+        {profile.gaming_warnings && profile.gaming_warnings.length > 0 && (
+          <div
+            className="classified-box"
+            style={{
+              marginBottom: "32px",
+              background: "rgba(140, 36, 27, 0.05)",
+              border: "2px dashed var(--stamp-red)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 700,
+                fontFamily: "'Courier Prime', monospace",
+                color: "var(--stamp-red)",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+              }}
+            >
+              ⚠ QUALITY & FRAUD SIGNALS DETECTED
             </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div>
-                <span
-                  style={{
-                    fontSize: "28px",
-                    fontWeight: 900,
-                    fontFamily: "'Courier Prime', monospace",
-                    padding: "6px 16px",
-                    background: profile.hiring_recommendation.recommendation === "Strong Hire" ? "#2b8a3e" : "var(--stamp-red)",
-                    color: "white",
-                    border: "2px solid var(--border-dark)",
-                    boxShadow: "3px 3px 0px var(--border-dark)",
-                  }}
-                >
-                  VERDICT: {profile.hiring_recommendation.recommendation.toUpperCase()}
-                </span>
-                <p style={{ fontFamily: "'Courier Prime', monospace", fontSize: "13px", marginTop: "10px", color: "var(--text-secondary)" }}>
-                  Engineering Maturity: <strong>{profile.hiring_recommendation.engineering_maturity}</strong> • Confidence: <strong>{profile.hiring_recommendation.confidence_score}%</strong>
-                </p>
+            {profile.gaming_warnings.map((w, i) => (
+              <div
+                key={i}
+                style={{
+                  fontSize: "13px",
+                  fontFamily: "'Courier Prime', monospace",
+                  color: "var(--text-primary)",
+                  paddingLeft: "16px",
+                  marginBottom: "4px",
+                }}
+              >
+                • {w}
               </div>
-
-              <div className="rubber-stamp" style={{ fontSize: "20px" }}>
-                APPROVED
-              </div>
-            </div>
-
-            <p style={{ fontSize: "16px", lineHeight: "1.6", fontFamily: "'Newsreader', serif", textAlign: "justify", marginBottom: "24px" }}>
-              {profile.hiring_recommendation.final_summary}
-            </p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-              <div style={{ border: "1px solid var(--border-dark)", padding: "16px", background: "rgba(43, 138, 62, 0.05)" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, fontFamily: "'Courier Prime', monospace", color: "#2b8a3e", marginBottom: "8px" }}>
-                  ✓ KEY EVALUATION STRENGTHS:
-                </div>
-                <ul style={{ paddingLeft: "18px", margin: 0, fontSize: "13px" }}>
-                  {profile.hiring_recommendation.strengths.map((st, i) => (
-                    <li key={i}>{st}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div style={{ border: "1px solid var(--border-dark)", padding: "16px", background: "rgba(201, 42, 42, 0.05)" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, fontFamily: "'Courier Prime', monospace", color: "var(--stamp-red)", marginBottom: "8px" }}>
-                  ⚠ IDENTIFIED RISKS & MITIGATIONS:
-                </div>
-                <ul style={{ paddingLeft: "18px", margin: 0, fontSize: "13px" }}>
-                  {profile.hiring_recommendation.risks.map((rk, i) => (
-                    <li key={i}>{rk}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
-        {/* Tab 2: Project Authenticity Agent Analysis */}
-        {activeTab === "authenticity" && profile.authenticity_data && (
-          <div className="vintage-box" style={{ padding: "32px", marginBottom: "32px" }}>
-            <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "16px" }}>
-              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                PROJECT AUTHENTICITY AGENT • ENGINEERING EVIDENCE REPORT
-              </span>
-            </div>
+        {/* Repository-Anchored Adaptive Technical Interview Suite */}
+        <div style={{ marginBottom: "32px" }}>
+          <AdaptiveInterviewWorkspace
+            questionsData={profile.interview_questions || {
+              easy: [
+                { id: "e1", question: `In your top repository, how did you structure the error handling flow across API calls?`, difficulty: "Easy", category: "Debugging", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Centralized error handler", "HTTP status code mapping"], rationale: "Assesses error recovery knowledge." },
+                { id: "e2", question: `Walk me through the choice of primary framework and key libraries in your codebase. What were the drivers?`, difficulty: "Easy", category: "Engineering Decisions", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Ecosystem & type safety benefits", "Prototyping speed"], rationale: "Verifies technical stack decision rationale." },
+                { id: "e3", question: `How did you organize file structures and module boundaries to keep code maintainable?`, difficulty: "Easy", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Layered architecture", "Separation of concerns"], rationale: "Evaluates fundamental software organization." },
+                { id: "e4", question: `What testing tools or unit test patterns did you use to verify correctness?`, difficulty: "Easy", category: "Testing", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Jest/pytest test runner", "Mocking API dependencies"], rationale: "Tests practical testing discipline." },
+                { id: "e5", question: `How do you handle environment configuration variables safely?`, difficulty: "Easy", category: "Security", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: [".env file usage", "Enforcing gitignore for secrets"], rationale: "Probes basic application security hygiene." }
+              ],
+              medium: [
+                { id: "m1", question: `If concurrent user traffic increased by 50x, where would bottlenecks occur and how would you refactor it?`, difficulty: "Medium", category: "Scalability", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["DB connection pooling", "Redis caching"], rationale: "Evaluates system bottleneck analysis." },
+                { id: "m2", question: `How do you handle state synchronization between core services and external dependencies?`, difficulty: "Medium", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Idempotency keys", "Exponential backoff retries"], rationale: "Tests architectural consistency models." },
+                { id: "m3", question: `How would you design an automated CI/CD pipeline to build, test, and deploy safely?`, difficulty: "Medium", category: "Performance", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["GitHub Actions workflow", "Zero-downtime rolling deployment"], rationale: "Assesses DevOps integration capability." },
+                { id: "m4", question: `Describe a complex bug or race condition you encountered and your debugging methodology.`, difficulty: "Medium", category: "Debugging", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Log stack trace analysis", "Isolated regression test creation"], rationale: "Verifies analytical problem solving." },
+                { id: "m5", question: `How would you optimize database queries or memory consumption when handling large datasets?`, difficulty: "Medium", category: "Engineering Decisions", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Cursor pagination", "Eliminating N+1 queries"], rationale: "Examines database query optimization." }
+              ],
+              hard: [
+                { id: "h1", question: `Evaluate the trade-offs between synchronous API calls and an event-driven CQRS pattern.`, difficulty: "Hard", category: "Trade-offs", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Eventual consistency vs ACID", "Operational complexity"], rationale: "Examines architectural trade-off reasoning." },
+                { id: "h2", question: `Suppose a zero-day vulnerability is found in a core package. Describe your mitigation strategy.`, difficulty: "Hard", category: "Security", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["Dependency auditing", "WAF / virtual patching"], rationale: "Probes security incident response under pressure." },
+                { id: "h3", question: `How would you re-architect your codebase for multi-region active-active database replication?`, difficulty: "Hard", category: "Scalability", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["GeoDNS & Edge CDN", "Multi-master DB conflict resolution"], rationale: "Tests staff-level system architecture vision." },
+                { id: "h4", question: `If your service experienced an unexpected 99.9th percentile tail latency spike of 4000ms, how would you profile it?`, difficulty: "Hard", category: "Performance", repo_context: `Repository: ${profile.github_username}/secondary`, ideal_answer_points: ["Distributed tracing (OpenTelemetry)", "CPU flamegraphs & DB lock profiling"], rationale: "Probes deep performance diagnostics." },
+                { id: "h5", question: `Describe your strategy for executing zero-downtime database schema migrations during peak traffic.`, difficulty: "Hard", category: "Architecture", repo_context: `Repository: ${profile.github_username}/core`, ideal_answer_points: ["Expand-contract migration pattern", "Dual-writing & async backfill"], rationale: "Evaluates zero-downtime database maintenance." }
+              ]
+            }}
+            candidateName={profile.name || profile.github_username}
+          />
+        </div>
 
-            <div style={{ display: "flex", gap: "24px", alignItems: "center", marginBottom: "20px" }}>
-              <div style={{ padding: "16px 24px", border: "2px solid var(--border-dark)", background: "var(--accent-light, #fff9db)", boxShadow: "3px 3px 0px var(--border-dark)" }}>
-                <div style={{ fontSize: "10px", fontFamily: "'Courier Prime', monospace", fontWeight: 700 }}>AUTHENTICITY SCORE</div>
-                <div className="font-headline" style={{ fontSize: "36px", fontWeight: 900, color: "var(--stamp-red)" }}>
-                  {profile.authenticity_data.authenticity_score} / 10
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: "13px", fontWeight: 700, fontFamily: "'Courier Prime', monospace" }}>
-                  CONFIDENCE LEVEL: {profile.authenticity_data.confidence_level.toUpperCase()}
-                </div>
-                <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "4px 0 0 0" }}>
-                  {profile.authenticity_data.explainable_reasoning}
-                </p>
-              </div>
-            </div>
-
-            <div className="rule-single" style={{ margin: "20px 0" }} />
-
-            <h4 style={{ fontSize: "14px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, textTransform: "uppercase", marginBottom: "12px" }}>
-              REPOSITORY EVOLUTION TIMELINE EVIDENCE:
-            </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {profile.authenticity_data.timeline_summary.map((evt, idx) => (
-                <div key={idx} style={{ padding: "12px", border: "1px solid var(--border-dark)", background: "var(--bg-primary)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, marginBottom: "4px" }}>
-                    <span style={{ color: "var(--stamp-red)" }}>{evt.repo_name} • {evt.event_type}</span>
-                    <span>{evt.date}</span>
-                  </div>
-                  <div style={{ fontSize: "13px", fontWeight: 600 }}>{evt.description}</div>
-                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>Impact: {evt.impact}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: 10-Domain Engineering Skills Assessment */}
-        {activeTab === "skills" && profile.skills_assessment && (
-          <div className="vintage-box" style={{ padding: "32px", marginBottom: "32px" }}>
-            <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
-              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                ENGINEERING SKILLS ASSESSMENT • 10-DOMAIN PROFICIENCY WITH EXPLAINABLE REASONING
-              </span>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              {Object.entries(profile.skills_assessment).map(([domainKey, detail]) => (
-                <div key={domainKey} style={{ padding: "16px", border: "1px solid var(--border-dark)", background: "var(--bg-primary)", boxShadow: "2px 2px 0px var(--border-dark)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                    <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "13px", fontWeight: 700, textTransform: "uppercase" }}>
-                      {detail.domain}
-                    </span>
-                    <span>
-                      <strong style={{ fontSize: "16px", color: "var(--stamp-red)" }}>{detail.score}</strong>/10
-                      <span style={{ fontSize: "11px", marginLeft: "6px", fontFamily: "'Courier Prime', monospace", color: "var(--text-muted)" }}>[{detail.level}]</span>
-                    </span>
-                  </div>
-                  <div className="score-bar-vintage" style={{ marginBottom: "8px" }}>
-                    <div className="score-bar-vintage-fill" style={{ width: `${(detail.score / 10) * 100}%` }} />
-                  </div>
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: "0 0 6px 0", lineHeight: "1.4" }}>
-                    {detail.reasoning}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Adaptive Interview Suite */}
-        {activeTab === "interview" && (
-          <div style={{ marginBottom: "32px" }}>
-            <AdaptiveInterviewWorkspace
-              questionsData={profile.interview_questions}
-              candidateName={profile.name || profile.github_username}
-            />
-          </div>
-        )}
-
-        {/* Tab 5: Resume Intelligence & Skill Matrix */}
-        {activeTab === "resume" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginBottom: "32px" }}>
-
-            {/* PDF Resume Uploader (Strict PDF Only) */}
-            <div className="vintage-box" style={{ padding: "28px", background: "var(--bg-secondary)" }}>
-              <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "16px" }}>
-                <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                  📄 UPLOAD CANDIDATE PDF RESUME FOR DYNAMIC AI PARSING
-                </span>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                {!pdfFile ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                    <label
-                      className="btn-vintage btn-vintage-primary"
-                      style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "13px", padding: "12px 24px" }}
-                    >
-                      📂 UPLOAD RESUME PDF (.pdf only)
-                      <input type="file" accept=".pdf,application/pdf" onChange={handlePdfFileSelect} style={{ display: "none" }} />
-                    </label>
-                    <span style={{ fontSize: "12px", fontFamily: "'Courier Prime', monospace", color: "var(--text-muted)" }}>
-                      Strictly PDF files (.pdf) accepted
-                    </span>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", border: "2px solid var(--border-dark)", boxShadow: "2px 2px 0px var(--border-dark)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span style={{ fontSize: "24px" }}>📄</span>
-                      <div>
-                        <div style={{ fontSize: "14px", fontWeight: 700, fontFamily: "'Courier Prime', monospace" }}>{pdfFile.name}</div>
-                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{(pdfFile.size / 1024).toFixed(1)} KB • PDF Document</div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <button
-                        onClick={handleAnalyzePdf}
-                        disabled={parsingResume || !extractedPdfText}
-                        className="btn-vintage btn-vintage-primary"
-                        style={{ fontSize: "12px", padding: "10px 18px" }}
-                      >
-                        {parsingResume ? "Parsing PDF..." : "⚡ ANALYZE PDF RESUME"}
-                      </button>
-                      <button
-                        onClick={() => { setPdfFile(null); setExtractedPdfText(""); }}
-                        className="btn-vintage"
-                        style={{ fontSize: "12px", padding: "10px 14px" }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {profile.resume_data && (
-              <div className="vintage-box" style={{ padding: "32px" }}>
-                <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
-                  <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--stamp-red)" }}>
-                    RESUME INTELLIGENCE AGENT • SKILL MATRIX & EXTRACTED EXPERIENCE
-                  </span>
-                </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div>
-                <h3 className="font-headline" style={{ fontSize: "20px", fontWeight: 800, margin: 0 }}>Candidate Resume Profile</h3>
-                <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "4px 0 0 0" }}>
-                  {profile.resume_data.candidate_summary}
-                </p>
-              </div>
-              <div style={{ padding: "12px 20px", border: "2px solid var(--border-dark)", background: "var(--accent-light)", textAlign: "center" }}>
-                <div style={{ fontSize: "10px", fontFamily: "'Courier Prime', monospace", fontWeight: 700 }}>RESUME SCORE</div>
-                <div className="font-headline" style={{ fontSize: "28px", fontWeight: 900, color: "var(--stamp-red)" }}>
-                  {profile.resume_data.resume_score} / 10
-                </div>
-              </div>
-            </div>
-
-            <h4 style={{ fontSize: "13px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, textTransform: "uppercase", marginBottom: "10px" }}>
-              EXTRACTED SKILL MATRIX ({profile.resume_data.skill_matrix.length}):
-            </h4>
-            <div style={{ overflowX: "auto", marginBottom: "20px" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", fontFamily: "'Courier Prime', monospace" }}>
-                <thead>
-                  <tr style={{ background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-dark)" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>SKILL</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>CATEGORY</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>PROFICIENCY</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>EVIDENCE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profile.resume_data.skill_matrix.map((item, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid var(--border-light)" }}>
-                      <td style={{ padding: "8px", fontWeight: 700 }}>{item.skill}</td>
-                      <td style={{ padding: "8px" }}>{item.category}</td>
-                      <td style={{ padding: "8px", color: "var(--stamp-red)" }}>{item.proficiency_level}</td>
-                      <td style={{ padding: "8px", color: "var(--text-secondary)" }}>{item.evidence}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    )}
-
-        {/* Tab 0 / Default: Main 2-Column Newspaper Layout (Overview) */}
-        {activeTab === "overview" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "32px", alignItems: "start" }}>
+        {/* Main 2-Column Newspaper Layout */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "32px", alignItems: "start" }}>
 
           {/* Left Column: Dossier Report & Repos */}
           <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -815,93 +452,75 @@ export default function ProfilePage({
               </div>
             </div>
 
-            {/* All Repositories Dossier */}
+            {/* Top Repositories */}
             <div className="vintage-box" style={{ padding: "32px" }}>
               <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
-                <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--stamp-red)" }}>
-                  FULL REPOSITORY MANIFEST & PROJECT DOSSIER ({profile.top_repos.length} REPOSITORIES)
+                <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                  REPOSITORY MANIFEST ({profile.top_repos.length} ANALYZED)
                 </span>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                {profile.top_repos.map((repo, i) => (
-                  <div
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {profile.top_repos.slice(0, 8).map((repo, i) => (
+                  <a
                     key={i}
+                    href={repo.repo_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{
-                      padding: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "16px",
+                      padding: "16px",
                       background: "var(--bg-primary)",
                       border: "2px solid var(--border-dark)",
+                      textDecoration: "none",
+                      color: "inherit",
                       boxShadow: "2px 2px 0px var(--border-dark)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <a
-                          href={repo.repo_url || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-headline"
-                          style={{
-                            fontSize: "17px",
-                            fontWeight: 800,
-                            color: "var(--stamp-red)",
-                            textDecoration: "none",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          {repo.repo_full_name}
-                          <ExternalLink size={14} style={{ color: "var(--stamp-red)" }} />
-                        </a>
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          fontFamily: "'Courier Prime', monospace",
+                          color: "var(--stamp-red)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {repo.repo_full_name}
                         {repo.is_fork && (
-                          <span style={{ fontSize: "10px", fontFamily: "'Courier Prime', monospace", background: "var(--bg-secondary)", border: "1px solid var(--border-dark)", padding: "2px 6px" }}>
-                            FORK
+                          <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "8px", fontWeight: 400 }}>
+                            (fork)
                           </span>
                         )}
                       </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          fontSize: "12px",
-                          fontFamily: "'Courier Prime', monospace",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {repo.language && <span className="tag-vintage" style={{ background: "var(--accent-light)" }}>{repo.language}</span>}
-                        <span>★ {repo.stars}</span>
-                        <span>🍴 {repo.forks}</span>
-                      </div>
-                    </div>
-
-                    {/* Project Description & README Highlights */}
-                    <div style={{ fontSize: "14px", lineHeight: 1.6, color: "var(--text-primary)", fontFamily: "'Newsreader', serif" }}>
-                      {repo.readme_summary || repo.description || `Repository ${repo.repo_full_name} containing clean source code architecture.`}
-                    </div>
-
-                    {/* Tech Stack & Topics Tags */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "4px" }}>
-                      <span style={{ fontSize: "10px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
-                        TECH STACK & TAGS:
-                      </span>
-                      {repo.language && (
-                        <span style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", padding: "2px 8px", border: "1px solid var(--border-dark)", background: "#fff", fontWeight: 700 }}>
-                          {repo.language}
-                        </span>
+                      {repo.description && (
+                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                          {repo.description.length > 110
+                            ? repo.description.slice(0, 110) + "..."
+                            : repo.description}
+                        </div>
                       )}
-                      {(repo.topics || ["open-source", "software-engineering"]).map((t, idx) => (
-                        <span key={idx} style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", padding: "2px 8px", border: "1px dashed var(--border-dark)", background: "var(--bg-secondary)" }}>
-                          #{t}
-                        </span>
-                      ))}
                     </div>
-                  </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        fontSize: "12px",
+                        fontFamily: "'Courier Prime', monospace",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {repo.language && <span className="tag-vintage">{repo.language}</span>}
+                      <span>★ {repo.stars}</span>
+                      <span>🍴 {repo.forks}</span>
+                    </div>
+                  </a>
                 ))}
               </div>
             </div>
@@ -1055,11 +674,11 @@ export default function ProfilePage({
                   })}
                 </div>
               )}
+              <div>FILE ID: {profile.id}</div>
             </div>
 
           </div>
         </div>
-        )}
 
         <div className="rule-double" style={{ marginTop: "60px" }} />
       </div>

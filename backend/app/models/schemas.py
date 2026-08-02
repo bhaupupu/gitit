@@ -25,150 +25,7 @@ class SearchFilters(BaseModel):
     page_size: int = 20
 
 
-class ParseResumeRequest(BaseModel):
-    resume_text: str = Field(..., min_length=10)
-    candidate_id: str | None = None
-
-
-class JDMatchRequest(BaseModel):
-    job_title: str | None = "Software Engineer"
-    job_description: str = Field(..., min_length=20)
-
-
-class AdaptiveFollowupRequest(BaseModel):
-    original_question: str
-    category: str
-    difficulty: str
-    repo_context: str | None = ""
-    user_response_rating: str  # "correct", "partially_correct", "incorrect"
-    candidate_answer_notes: str | None = ""
-
-
-# ── Response Schemas & Component Schemas ──────────────────────────
-
-
-class SkillMatrixItem(BaseModel):
-    skill: str
-    category: str
-    proficiency_level: str  # "Beginner", "Intermediate", "Advanced", "Expert"
-    years_experience: float | None = 0
-    evidence: str
-
-
-class ResumeAnalysis(BaseModel):
-    candidate_summary: str
-    resume_score: float  # 0-10 or 0-100
-    skills_extracted: list[str]
-    experience: list[dict]
-    education: list[dict]
-    projects: list[dict]
-    achievements: list[str]
-    certifications: list[str]
-    skill_matrix: list[SkillMatrixItem]
-    strengths: list[str]
-    weaknesses: list[str]
-
-
-class JDMatchResponse(BaseModel):
-    job_title: str | None = None
-    match_percentage: float
-    matching_skills: list[str]
-    missing_skills: list[str]
-    experience_match: dict
-    candidate_fit: str
-    improvement_suggestions: list[str]
-    reasoning: dict
-
-
-class TimelineEvent(BaseModel):
-    date: str
-    event_type: str
-    repo_name: str
-    description: str
-    impact: str
-
-
-class AuthenticityAnalysis(BaseModel):
-    authenticity_score: float  # 0-10 scale or 0-100
-    confidence_level: str  # "High", "Medium", "Low"
-    supporting_evidence: list[str]
-    timeline_summary: list[TimelineEvent]
-    repository_evolution: str
-    commit_cadence: str
-    refactoring_insights: str
-    code_consistency_notes: str
-    explainable_reasoning: str
-
-
-class SkillScoreDetail(BaseModel):
-    domain: str
-    score: float  # 0-10
-    level: str  # "Junior", "Mid", "Senior", "Staff+"
-    evidence: list[str]
-    reasoning: str
-
-
-class EngineeringSkillsAssessment(BaseModel):
-    backend: SkillScoreDetail
-    frontend: SkillScoreDetail
-    ai_ml: SkillScoreDetail
-    devops: SkillScoreDetail
-    security: SkillScoreDetail
-    testing: SkillScoreDetail
-    system_design: SkillScoreDetail
-    database_design: SkillScoreDetail
-    cloud: SkillScoreDetail
-    scalability: SkillScoreDetail
-
-
-class InterviewQuestion(BaseModel):
-    id: str
-    question: str
-    difficulty: str  # "Easy", "Medium", "Hard"
-    category: str  # "Architecture", "Trade-offs", "Debugging", "Security", "Scalability", "Performance", "Engineering Decisions"
-    repo_context: str
-    ideal_answer_points: list[str]
-    rationale: str
-
-
-class InterviewSuite(BaseModel):
-    easy: list[InterviewQuestion]
-    medium: list[InterviewQuestion]
-    hard: list[InterviewQuestion]
-
-
-class AdaptiveFollowupResponse(BaseModel):
-    rating: str
-    follow_up_question: str
-    harder_question: str
-    easier_question: str
-    alternative_scenario: str
-    deeper_architecture_question: str
-    guidance_notes: str
-
-
-class HiringRecommendation(BaseModel):
-    recommendation: str  # "Strong Hire", "Hire", "Borderline", "No Hire"
-    overall_fit: str
-    engineering_maturity: str  # "Junior", "Mid-Level", "Senior", "Staff", "Principal"
-    confidence_score: float  # 0-100%
-    strengths: list[str]
-    risks: list[str]
-    supporting_evidence: list[str]
-    final_summary: str
-
-
-class AgentProgressStep(BaseModel):
-    agent_id: str
-    agent_name: str
-    status: str  # "pending", "in_progress", "complete", "failed"
-    detail: str
-
-
-class AgentProgressState(BaseModel):
-    username: str
-    current_agent: str
-    steps: list[AgentProgressStep]
+# ── Response Schemas ─────────────────────────────────────────────
 
 
 class RepoSummary(BaseModel):
@@ -179,8 +36,6 @@ class RepoSummary(BaseModel):
     forks: int = 0
     language: str | None = None
     is_fork: bool = False
-    topics: list[str] | None = None
-    readme_summary: str | None = None
     analysis_data: dict | None = None
 
     model_config = {"from_attributes": True}
@@ -242,13 +97,7 @@ class EngineerProfile(BaseModel):
     frameworks: list[str] | None = None
     domains: list[str] | None = None
     gaming_warnings: list[str] | None = None
-
-    # Extended AI Hiring Co-Pilot Data
-    resume_data: dict | None = None
-    authenticity_data: dict | None = None
-    skills_assessment: dict | None = None
     interview_questions: dict | None = None
-    hiring_recommendation: dict | None = None
 
     # Score breakdown
     score_breakdown: ScoreBreakdown | None = None
@@ -276,11 +125,157 @@ class AnalysisResponse(BaseModel):
     message: str
     engineer_id: str | None = None
     profile: EngineerProfile | None = None
-    agent_progress: AgentProgressState | None = None
 
 
 class AnalysisStatus(BaseModel):
     status: str  # "pending", "analyzing", "complete", "error"
     progress: int = 0  # 0-100
     message: str = ""
+
+
+# ── Resume Intelligence Schemas ───────────────────────────────────
+
+
+class WorkExperience(BaseModel):
+    company: str | None = None
+    role: str | None = None
+    duration: str | None = None
+    description: str | None = None
+    highlights: list[str] = []
+
+
+class EducationItem(BaseModel):
+    institution: str | None = None
+    degree: str | None = None
+    year: str | None = None
+
+
+class ProjectItem(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    technologies: list[str] = []
+
+
+class JobFitRequest(BaseModel):
+    job_description: str = Field(..., min_length=10)
+
+
+class JobFitEvaluation(BaseModel):
+    match_percentage: float = 0.0
+    qualification_score: float = 0.0
+    verdict: str = "Neutral"  # Excellent, Strong, Moderate, Weak
+    fit_summary: str = ""
+    key_strengths: list[str] = []
+    skill_gaps: list[str] = []
+    missing_prerequisites: list[str] = []
+    recommendation: str = ""
+
+
+class ParsedResumeResponse(BaseModel):
+    id: str
+    filename: str
+    file_format: str
+    raw_text: str | None = None
+    candidate_name: str | None = None
+    github_username: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+    experience_years: float | None = 0.0
+    skills: list[str] = []
+    work_history: list[WorkExperience] = []
+    education: list[EducationItem] = []
+    projects: list[ProjectItem] = []
+    certifications: list[str] = []
+    job_fit_evaluation: JobFitEvaluation | None = None
+    model_config = {"from_attributes": True}
+
+
+# ── Job Description Requirement Parsing Schemas ───────────────────
+
+
+class JobDescriptionParseRequest(BaseModel):
+    job_description: str = Field(..., min_length=10)
+
+
+class ParsedJobDescription(BaseModel):
+    role_title: str | None = None
+    required_skills: list[str] = []
+    nice_to_have_skills: list[str] = []
+    experience_years_required: float | None = 0.0
+    experience_level: str | None = None  # Junior, Mid-Level, Senior, Staff, Lead
+    domain_knowledge: list[str] = []
+    key_responsibilities: list[str] = []
+    education_requirements: str | None = None
+
+
+# ── Job Description Matching Engine Schemas ───────────────────────
+
+
+class JobMatchRequest(BaseModel):
+    resume_id: str
+    job_description: str = Field(..., min_length=10)
+
+
+class ExperienceComparison(BaseModel):
+    candidate_years: float = 0.0
+    required_years: float = 0.0
+    meets_requirement: bool = True
+
+
+class JobMatchResponse(BaseModel):
+    resume_id: str
+    candidate_name: str | None = None
+    match_percentage: float = 0.0
+    qualification_score: float = 0.0
+    verdict: str = "Neutral"
+    fit_summary: str = ""
+    parsed_jd: ParsedJobDescription
+    matched_skills: list[str] = []
+    unmatched_required_skills: list[str] = []
+    key_strengths: list[str] = []
+    skill_gaps: list[str] = []
+    missing_prerequisites: list[str] = []
+    experience_comparison: ExperienceComparison
+    recommendation: str = ""
+
+
+# ── Interview Intelligence Schemas ─────────────────────────────────
+
+
+class InterviewQuestion(BaseModel):
+    id: str
+    question: str
+    difficulty: str
+    category: str
+    repo_context: str
+    ideal_answer_points: list[str]
+    rationale: str
+
+
+class InterviewSuite(BaseModel):
+    easy: list[InterviewQuestion]
+    medium: list[InterviewQuestion]
+    hard: list[InterviewQuestion]
+
+
+class AdaptiveFollowupRequest(BaseModel):
+    original_question: str
+    category: str
+    difficulty: str
+    repo_context: str | None = None
+    user_response_rating: str  # "correct", "partially_correct", "incorrect"
+    candidate_answer_notes: str | None = None
+
+
+class AdaptiveFollowupResponse(BaseModel):
+    rating: str
+    follow_up_question: str
+    harder_question: str
+    easier_question: str
+    alternative_scenario: str
+    deeper_architecture_question: str
+    guidance_notes: str
+
+
 

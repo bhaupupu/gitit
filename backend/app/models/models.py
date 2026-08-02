@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Float, Integer, Text, DateTime, JSON, ForeignKey
+from sqlalchemy import String, Float, Integer, Text, DateTime, JSON, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
@@ -51,13 +51,6 @@ class Engineer(Base):
     score_collaboration: Mapped[float | None] = mapped_column(Float)
     score_specialization: Mapped[float | None] = mapped_column(Float)
 
-    # AI Hiring Co-Pilot Additions
-    resume_data: Mapped[dict | None] = mapped_column(JSON)
-    authenticity_data: Mapped[dict | None] = mapped_column(JSON)
-    skills_assessment: Mapped[dict | None] = mapped_column(JSON)
-    interview_questions: Mapped[dict | None] = mapped_column(JSON)
-    hiring_recommendation: Mapped[dict | None] = mapped_column(JSON)
-
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -66,7 +59,6 @@ class Engineer(Base):
     # Relationships
     repos: Mapped[list["EngineerRepo"]] = relationship(back_populates="engineer", cascade="all, delete-orphan")
     score_components: Mapped[list["ScoreComponent"]] = relationship(back_populates="engineer", cascade="all, delete-orphan")
-    job_matches: Mapped[list["JobMatch"]] = relationship(back_populates="engineer", cascade="all, delete-orphan")
 
 
 class EngineerRepo(Base):
@@ -106,23 +98,39 @@ class ScoreComponent(Base):
     engineer: Mapped["Engineer"] = relationship(back_populates="score_components")
 
 
-class JobMatch(Base):
-    """Stores job description matching results for an engineer."""
+class Resume(Base):
+    """Uploaded and parsed resume record with job fit evaluation."""
 
-    __tablename__ = "job_matches"
+    __tablename__ = "resumes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    engineer_id: Mapped[str] = mapped_column(String(36), ForeignKey("engineers.id"), nullable=False)
-    job_title: Mapped[str | None] = mapped_column(String(255))
-    job_description: Mapped[str] = mapped_column(Text, nullable=False)
-    match_percentage: Mapped[float] = mapped_column(Float, default=0.0)
-    matching_skills: Mapped[list | None] = mapped_column(JSON)
-    missing_skills: Mapped[list | None] = mapped_column(JSON)
-    experience_match: Mapped[dict | None] = mapped_column(JSON)
-    candidate_fit: Mapped[str | None] = mapped_column(Text)
-    improvement_suggestions: Mapped[list | None] = mapped_column(JSON)
-    reasoning: Mapped[dict | None] = mapped_column(JSON)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    candidate_name: Mapped[str | None] = mapped_column(String(255))
+    github_username: Mapped[str | None] = mapped_column(String(255))
+    email: Mapped[str | None] = mapped_column(String(255))
+    phone: Mapped[str | None] = mapped_column(String(50))
 
-    engineer: Mapped["Engineer"] = relationship(back_populates="job_matches")
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_format: Mapped[str] = mapped_column(String(20), nullable=False)  # pdf, docx, txt
+    raw_text: Mapped[str] = mapped_column(Text, nullable=False)
+    file_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+
+    # Parsed structured data
+    parsed_data: Mapped[dict | None] = mapped_column(JSON)
+    skills: Mapped[list | None] = mapped_column(JSON)
+    experience_years: Mapped[float | None] = mapped_column(Float)
+    work_history: Mapped[list | None] = mapped_column(JSON)
+    education: Mapped[list | None] = mapped_column(JSON)
+    projects: Mapped[list | None] = mapped_column(JSON)
+    certifications: Mapped[list | None] = mapped_column(JSON)
+
+    # Job Fit Analysis
+    job_description: Mapped[str | None] = mapped_column(Text)
+    job_fit_evaluation: Mapped[dict | None] = mapped_column(JSON)
+    qualification_score: Mapped[float | None] = mapped_column(Float)
+
+    # Optional linkage
+    engineer_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("engineers.id"), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

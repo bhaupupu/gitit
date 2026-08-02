@@ -239,11 +239,6 @@ async def _build_profile_response(engineer: Engineer, db: AsyncSession) -> Engin
         frameworks=engineer.frameworks,
         domains=engineer.domains,
         gaming_warnings=engineer.gaming_warnings,
-        resume_data=engineer.resume_data,
-        authenticity_data=engineer.authenticity_data,
-        skills_assessment=engineer.skills_assessment,
-        interview_questions=engineer.interview_questions,
-        hiring_recommendation=engineer.hiring_recommendation,
         score_breakdown=ScoreBreakdown(
             technical_depth=engineer.score_technical_depth or 0,
             output_quality=engineer.score_output_quality or 0,

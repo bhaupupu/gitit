@@ -16,7 +16,6 @@ from app.models.models import Engineer, EngineerRepo
 from app.services.github import github_service
 from app.services.scoring import compute_scores
 from app.services.llm import llm_service
-from app.services.agents import multi_agent_orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +29,8 @@ class AnalyzerService:
 
         1. Fetch raw data from GitHub
         2. Compute structured metrics
-        3. Run LLM synthesis & multi-agent pipeline
-        4. Compute scores & extended AI hiring evaluation
+        3. Run LLM synthesis
+        4. Compute scores
         5. Persist to database
         """
         logger.info(f"Starting analysis for: {username}")
@@ -56,9 +55,6 @@ class AnalyzerService:
         llm_profile = await llm_service.synthesize_profile(github_data, metrics, scores)
         logger.info(f"LLM synthesis complete: archetype={scores['archetype']}")
 
-        # ── Layer 5: Multi-Agent Co-Pilot Pipeline ───────────────
-        multi_agent_output = multi_agent_orchestrator.run_multi_agent_pipeline(github_data, metrics, scores)
-
         # ── Persist to Database ─────────────────────────────────
         engineer = await self._persist_engineer(
             db=db,
@@ -67,7 +63,6 @@ class AnalyzerService:
             metrics=metrics,
             scores=scores,
             llm_profile=llm_profile,
-            agent_data=multi_agent_output,
         )
 
         return engineer
@@ -236,7 +231,6 @@ class AnalyzerService:
         metrics: dict,
         scores: dict,
         llm_profile: dict,
-        agent_data: dict = None,
     ) -> Engineer:
         """Save or update engineer profile in the database."""
         # Check if engineer exists
@@ -300,15 +294,6 @@ class AnalyzerService:
         engineer.frameworks = llm_profile.get("frameworks", [])
         engineer.domains = llm_profile.get("domains", [])
         engineer.primary_languages = lang_dist
-
-        # Save Extended Agent Output
-        if agent_data:
-            engineer.resume_data = agent_data.get("resume_data")
-            engineer.authenticity_data = agent_data.get("authenticity_data")
-            engineer.skills_assessment = agent_data.get("skills_assessment")
-            engineer.interview_questions = agent_data.get("interview_questions")
-            engineer.hiring_recommendation = agent_data.get("hiring_recommendation")
-
         engineer.last_analyzed_at = datetime.utcnow()
         engineer.updated_at = datetime.utcnow()
 
