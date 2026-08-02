@@ -39,7 +39,7 @@ export default function ProfilePage({
   const [profile, setProfile] = useState<EngineerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "interview" | "resume" | "jobmatch">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "interview">("overview");
   const [isJobMatchOpen, setIsJobMatchOpen] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [extractedPdfText, setExtractedPdfText] = useState("");
@@ -433,29 +433,7 @@ export default function ProfilePage({
           >
             🎯 TECHNICAL INTERVIEW SUITE (15 QUESTIONS)
           </button>
-          <button
-            onClick={() => setActiveTab("resume")}
-            className={`btn-vintage ${activeTab === "resume" ? "btn-vintage-primary" : ""}`}
-            style={{ fontSize: "13px", padding: "10px 20px" }}
-          >
-            📄 RESUME INTELLIGENCE
-          </button>
-          <button
-            onClick={() => { setIsJobMatchOpen(true); }}
-            className={`btn-vintage`}
-            style={{ fontSize: "13px", padding: "10px 20px" }}
-          >
-            💼 JOB MATCH EVALUATOR
-          </button>
         </div>
-
-        {/* Job Match Evaluator Modal */}
-        <JobMatchModal
-          engineerId={profile.id}
-          candidateName={profile.name || profile.github_username}
-          isOpen={isJobMatchOpen}
-          onClose={() => setIsJobMatchOpen(false)}
-        />
 
         {/* Tab 2: Technical Interview Suite (Dedicated Page View) */}
         {activeTab === "interview" && (
@@ -486,58 +464,6 @@ export default function ProfilePage({
               }}
               candidateName={profile.name || profile.github_username}
             />
-          </div>
-        )}
-
-        {/* Tab 3: Resume Intelligence Page */}
-        {activeTab === "resume" && (
-          <div className="vintage-box" style={{ padding: "32px", marginBottom: "32px" }}>
-            <div style={{ borderBottom: "2px solid var(--border-dark)", paddingBottom: "6px", marginBottom: "20px" }}>
-              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--stamp-red)" }}>
-                AI RESUME INTELLIGENCE & PDF UPLOADER
-              </span>
-            </div>
-
-            {/* PDF Uploader Controls */}
-            <div style={{ marginBottom: "24px", padding: "20px", background: "var(--bg-secondary)", border: "2px solid var(--border-dark)" }}>
-              <label style={{ display: "block", fontSize: "12px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, marginBottom: "8px" }}>
-                UPLOAD RESUME PDF (.pdf only):
-              </label>
-              <input
-                type="file"
-                accept=".pdf,application/pdf"
-                onChange={handlePdfFileSelect}
-                style={{ fontSize: "13px", fontFamily: "'Courier Prime', monospace", marginBottom: "12px" }}
-              />
-              {pdfFile && (
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{ fontSize: "12px", fontFamily: "'Courier Prime', monospace", background: "#fff", padding: "4px 8px", border: "1px solid var(--border-dark)" }}>
-                    📄 {pdfFile.name} ({(pdfFile.size / 1024).toFixed(0)} KB)
-                  </span>
-                  <button onClick={handleAnalyzePdf} disabled={parsingResume} className="btn-vintage btn-vintage-primary" style={{ fontSize: "12px" }}>
-                    {parsingResume ? "ANALYZING PDF..." : "⚡ ANALYZE PDF RESUME"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Resume Dossier Result */}
-            {profile.resume_data ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ fontSize: "18px", fontWeight: 800, fontFamily: "'Newsreader', serif" }}>
-                  {profile.resume_data.candidate_summary}
-                </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  {profile.resume_data.skills_extracted.map((s, i) => (
-                    <span key={i} className="tag-vintage">{s}</span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ color: "var(--text-muted)", fontFamily: "'Courier Prime', monospace", fontSize: "13px" }}>
-                No PDF resume uploaded yet. Select a PDF above and click Analyze PDF Resume.
-              </div>
-            )}
           </div>
         )}
 
