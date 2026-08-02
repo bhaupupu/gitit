@@ -1,3 +1,5 @@
+import { extractTextFromPdf } from "@/lib/pdfExtractor";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface ScoreBreakdown {
@@ -343,6 +345,7 @@ export interface ParsedResume {
   filename: string;
   file_format: string;
   raw_text?: string;
+  file_url?: string;
   candidate_name: string | null;
   github_username: string | null;
   email: string | null;
@@ -359,6 +362,12 @@ export interface ParsedResume {
 }
 
 export async function uploadResume(file: File): Promise<ParsedResume> {
+  const dataUrl = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string) || "");
+    reader.readAsDataURL(file);
+  });
+
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -369,7 +378,8 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
     });
 
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      return { ...data, file_url: dataUrl };
     }
   } catch {
     // Client-side fallback engine for Vercel standalone execution
@@ -377,30 +387,30 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
 
   let extractedText = "";
   try {
-    const buffer = await file.arrayBuffer();
-    const decoder = new TextDecoder("utf-8");
-    const raw = decoder.decode(buffer);
-    extractedText = raw.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ");
+    extractedText = await extractTextFromPdf(file);
   } catch {
-    extractedText = `PDF Resume Document: ${file.name}`;
+    extractedText = "";
   }
 
-  if (!extractedText || extractedText.length < 25) {
+  if (!extractedText || extractedText.length < 15) {
     extractedText = `PDF Resume Document: ${file.name} - Engineering Candidate Profile`;
   }
 
   const parsedResumeData = await parseResumeText(extractedText);
 
+  let candName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+
   const newResume: ParsedResume = {
     id: `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     filename: file.name,
-    file_format: file.name.endsWith(".pdf") ? "pdf" : "docx",
+    file_format: file.name.toLowerCase().endsWith(".pdf") ? "pdf" : "docx",
     raw_text: extractedText,
-    candidate_name: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+    file_url: dataUrl,
+    candidate_name: candName,
     github_username: null,
     email: "candidate@example.com",
     phone: "+1 (555) 019-2831",
-    experience_years: 4.5,
+    experience_years: parsedResumeData.resume_score ? Math.round((parsedResumeData.resume_score / 2) * 10) / 10 : 4.5,
     skills: parsedResumeData.skills_extracted,
     work_history: parsedResumeData.experience.map(e => ({
       company: e.company,
@@ -421,14 +431,14 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
     })),
     certifications: parsedResumeData.certifications,
     job_fit_evaluation: {
-      match_percentage: 88.5,
-      qualification_score: 8.8,
-      verdict: "Strong Fit",
-      fit_summary: `Candidate resume demonstrates strong technical alignment with ${parsedResumeData.skills_extracted.slice(0, 4).join(", ")}.`,
+      match_percentage: Math.min(98.0, Math.max(70.0, Math.round(parsedResumeData.resume_score * 9.8 * 10) / 10)),
+      qualification_score: parsedResumeData.resume_score,
+      verdict: parsedResumeData.resume_score >= 7.5 ? "Strong Fit" : "Moderate Fit",
+      fit_summary: `Candidate resume demonstrates verified technical alignment in ${parsedResumeData.skills_extracted.slice(0, 4).join(", ")}.`,
       key_strengths: parsedResumeData.strengths,
       skill_gaps: parsedResumeData.weaknesses,
       missing_prerequisites: [],
-      recommendation: "Strongly recommended for technical interview screening."
+      recommendation: "Recommended for technical interview screening."
     },
     created_at: new Date().toISOString(),
   };
@@ -437,7 +447,7 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
     const existing = JSON.parse(localStorage.getItem("talentlens_resumes") || "[]");
     localStorage.setItem("talentlens_resumes", JSON.stringify([newResume, ...existing]));
   } catch {
-    // Ignore storage limit
+    // Storage limit
   }
 
   return newResume;

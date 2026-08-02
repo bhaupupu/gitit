@@ -201,7 +201,7 @@ export default function ResumeProfileView({ resume, onUpdateResume }: ResumeProf
               {showPdfPreview ? "[ HIDE PDF PREVIEW ▲ ]" : "[ VIEW PDF PREVIEW ▼ ]"}
             </button>
             <a
-              href={getResumeFileUrl(resume.id)}
+              href={resume.file_url || getResumeFileUrl(resume.id)}
               target="_blank"
               rel="noreferrer"
               className="btn-vintage text-xs py-2 px-4 inline-flex items-center gap-1"
@@ -210,7 +210,8 @@ export default function ResumeProfileView({ resume, onUpdateResume }: ResumeProf
               <span>OPEN TAB ↗</span>
             </a>
             <a
-              href={getResumeDownloadUrl(resume.id)}
+              href={resume.file_url || getResumeDownloadUrl(resume.id)}
+              download={resume.filename}
               className="btn-vintage text-xs py-2 px-4 inline-flex items-center gap-1"
               style={{ background: "#8C241B", color: "white", textDecoration: "none" }}
             >
@@ -222,16 +223,24 @@ export default function ResumeProfileView({ resume, onUpdateResume }: ResumeProf
         {showPdfPreview && (
           <div className="space-y-4 pt-1">
             <div className="border-2 border-[#151515] bg-[#2A2825] rounded-none overflow-hidden shadow-inner">
-              <iframe
-                src={`${getResumeFileUrl(resume.id)}#toolbar=0&navpanes=0`}
-                className="w-full h-[540px] border-none bg-white"
-                title={`Resume Document - ${resume.filename}`}
-              />
+              {resume.file_url ? (
+                <iframe
+                  src={`${resume.file_url}#toolbar=0&navpanes=0`}
+                  className="w-full h-[540px] border-none bg-white"
+                  title={`Resume Document - ${resume.filename}`}
+                />
+              ) : (
+                <iframe
+                  src={`${getResumeFileUrl(resume.id)}#toolbar=0&navpanes=0`}
+                  className="w-full h-[540px] border-none bg-white"
+                  title={`Resume Document - ${resume.filename}`}
+                />
+              )}
             </div>
             <div className="flex items-center justify-between text-xs font-typewriter text-[#787167]">
               <span>FILE: {resume.filename} ({resume.file_format.toUpperCase()})</span>
               <a
-                href={getResumeFileUrl(resume.id)}
+                href={resume.file_url || getResumeFileUrl(resume.id)}
                 target="_blank"
                 rel="noreferrer"
                 className="underline hover:text-[#8C241B]"
