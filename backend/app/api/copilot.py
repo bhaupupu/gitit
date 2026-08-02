@@ -104,6 +104,12 @@ async def parse_resume(payload: ParseResumeRequest, db: AsyncSession = Depends(g
         eng = res.scalar_one_or_none()
         if eng:
             eng.resume_data = result
+            # Factor resume_score into overall talent_score (70% GitHub code + 30% Resume Score)
+            resume_score_val = result.get("resume_score", 8.5)
+            curr_score = eng.talent_score or 80.0
+            new_talent_score = round((curr_score * 0.7) + (resume_score_val * 10 * 0.3), 1)
+            eng.talent_score = min(99.5, max(40.0, new_talent_score))
+            eng.would_hire_score = min(5.0, max(1.0, round(eng.talent_score / 20, 1)))
             await db.commit()
 
     return ResumeAnalysis(**result)

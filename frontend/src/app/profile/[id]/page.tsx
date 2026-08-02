@@ -90,11 +90,38 @@ export default function ProfilePage({
     if (!extractedPdfText || !profile) return;
     setParsingResume(true);
     try {
-      const updatedData = await parseResumeText(extractedPdfText, profile.id);
-      setProfile({
+      const updatedResumeData = await parseResumeText(extractedPdfText, profile.id);
+
+      // Blend Resume Score into Composite Talent Score (70% Repo Code + 30% Resume Score)
+      const resumeScore100 = updatedResumeData.resume_score * 10;
+      const oldTalentScore = profile.talent_score || 80.0;
+      const newTalentScore = Math.min(99.5, Math.max(40.0, Math.round((oldTalentScore * 0.7 + resumeScore100 * 0.3) * 10) / 10));
+      const newHireScore = Math.min(5.0, Math.max(1.0, Math.round((newTalentScore / 20) * 10) / 10));
+
+      const newVerdict = newTalentScore >= 88.0 ? "Strong Hire" : newTalentScore >= 75.0 ? "Hire" : newTalentScore >= 60.0 ? "Borderline" : "No Hire";
+
+      const updatedProfile: EngineerProfile = {
         ...profile,
-        resume_data: updatedData,
-      });
+        talent_score: newTalentScore,
+        would_hire_score: newHireScore,
+        resume_data: updatedResumeData,
+        score_breakdown: profile.score_breakdown ? {
+          ...profile.score_breakdown,
+          technical_depth: Math.min(10.0, Math.round(((profile.score_breakdown.technical_depth * 0.7) + (updatedResumeData.resume_score * 0.3)) * 10) / 10),
+          specialization: Math.min(10.0, Math.round(((profile.score_breakdown.specialization * 0.7) + (updatedResumeData.resume_score * 0.3)) * 10) / 10),
+        } : null,
+        hiring_recommendation: profile.hiring_recommendation ? {
+          ...profile.hiring_recommendation,
+          recommendation: newVerdict,
+          overall_fit: `${newVerdict} (${newTalentScore}/100 - Integrated Code & Resume Analysis)`,
+          confidence_score: Math.min(98.0, (profile.hiring_recommendation.confidence_score || 85.0) + 5.0),
+          final_summary: `VERDICT: ${newVerdict}. Integrated evaluation combining GitHub repository evidence and uploaded PDF resume score (${updatedResumeData.resume_score}/10) yields a composite Overall Talent Score of ${newTalentScore}/100.`
+        } : null,
+      };
+
+      setProfile(updatedProfile);
+
+      alert(`Resume parsed successfully! Resume Score: ${updatedResumeData.resume_score}/10. Overall Talent Score updated to ${newTalentScore}/100.`);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to parse PDF resume");
     } finally {
