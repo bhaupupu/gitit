@@ -110,29 +110,29 @@ export default function ResumesPage() {
           <nav
             style={{
               display: "flex",
-              gap: "24px",
-              fontSize: "12px",
+              gap: "32px",
+              fontSize: "16px",
               fontFamily: "'Courier Prime', monospace",
-              fontWeight: 700,
+              fontWeight: 800,
               textTransform: "uppercase",
-              letterSpacing: "0.1em",
+              letterSpacing: "0.12em",
             }}
           >
             <button
               onClick={() => router.push("/")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-primary)" }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)" }}
             >
               [ DASHBOARD ]
             </button>
             <button
               onClick={() => router.push("/search")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-primary)" }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)" }}
             >
               [ DIRECTORY ]
             </button>
             <button
               onClick={() => router.push("/resumes")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-primary)", borderBottom: "2px solid var(--border-dark)" }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)", borderBottom: "2px solid var(--border-dark)" }}
             >
               [ RESUME ]
             </button>

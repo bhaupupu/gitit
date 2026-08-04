@@ -148,29 +148,28 @@ export default function Home() {
           style={{
             display: "flex",
             justifyContent: "center",
-            gap: "32px",
-            fontSize: "12px",
+            gap: "40px",
+            fontSize: "16px",
             fontFamily: "'Courier Prime', monospace",
-            fontWeight: 700,
+            fontWeight: 800,
             textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            padding: "4px 0",
+            letterSpacing: "0.12em",
+            padding: "8px 0",
           }}
         >
-          <a href="#" style={{ color: "var(--text-primary)", textDecoration: "none" }}>[ DASHBOARD ]</a>
+          <a href="#" style={{ color: "var(--text-primary)", textDecoration: "none", fontSize: "16px", fontWeight: 800 }}>[ DASHBOARD ]</a>
           <button
             onClick={() => router.push("/search")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-primary)" }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)" }}
           >
             [ DIRECTORY ]
           </button>
           <button
             onClick={() => router.push("/resumes")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-primary)" }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)" }}
           >
             [ RESUME ]
           </button>
-
         </nav>
 
         {/* Double Rule Below Nav */}
@@ -265,26 +264,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Quick Profile Shortcuts */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "12px",
-              fontSize: "12px",
-              fontFamily: "'Courier Prime', monospace",
-              color: "var(--text-muted)",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>POPULAR DOSSIERS:</span>
-            <HintBadge name="torvalds" onClick={setUsername} />
-            <HintBadge name="gaearon" onClick={setUsername} />
-            <HintBadge name="sindresorhus" onClick={setUsername} />
-            <HintBadge name="tj" onClick={setUsername} />
-          </div>
-
           {/* Star Ornament Divider */}
           <div style={{ fontSize: "16px", color: "var(--text-muted)", marginTop: "32px" }}>
             — ★ —
@@ -293,115 +272,6 @@ export default function Home() {
 
         {/* Section Rule */}
         <div className="rule-dashed" />
-
-        {/* Performance Metrics Section (Matching Image Reference) */}
-        <section style={{ marginBottom: "48px" }}>
-          <h3
-            className="font-headline"
-            style={{
-              fontSize: "24px",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginBottom: "6px",
-              textAlign: "center",
-            }}
-          >
-            PERFORMANCE METRICS & INTELLIGENCE
-          </h3>
-
-          <div className="rule-single" />
-
-          {/* Metrics Cards Grid (4 Boxes Matching Reference Image) */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: "24px",
-              marginTop: "24px",
-            }}
-          >
-            {/* Card 1 */}
-            <div className="vintage-card" style={{ padding: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div>
-                  <div style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                    TOTAL ENGINEERS
-                  </div>
-                  <div style={{ fontSize: "36px", fontWeight: 800, fontFamily: "'Newsreader', serif", marginTop: "4px" }}>
-                    5,240
-                  </div>
-                </div>
-                <div className="postage-stamp-icon">
-                  <BarChart3 size={18} />
-                </div>
-              </div>
-              <div className="stamp-badge">
-                ↑ 12.5% INCREASE
-              </div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="vintage-card" style={{ padding: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div>
-                  <div style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                    AVG TALENT SCORE
-                  </div>
-                  <div style={{ fontSize: "36px", fontWeight: 800, fontFamily: "'Newsreader', serif", marginTop: "4px" }}>
-                    68.4 <span style={{ fontSize: "18px", color: "var(--text-muted)" }}>/100</span>
-                  </div>
-                </div>
-                <div className="postage-stamp-icon" style={{ background: "var(--stamp-brown)" }}>
-                  <Award size={18} />
-                </div>
-              </div>
-              <div className="stamp-badge" style={{ color: "var(--stamp-brown)", borderColor: "var(--stamp-brown)", background: "rgba(140, 90, 27, 0.05)" }}>
-                ↑ 8.3% GROWTH
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="vintage-card" style={{ padding: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div>
-                  <div style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                    CONFIDENCE RATING
-                  </div>
-                  <div style={{ fontSize: "36px", fontWeight: 800, fontFamily: "'Newsreader', serif", marginTop: "4px" }}>
-                    4.8 <span style={{ fontSize: "18px", color: "var(--text-muted)" }}>/5.0</span>
-                  </div>
-                </div>
-                <div className="postage-stamp-icon" style={{ background: "var(--stamp-gold)" }}>
-                  <Star size={18} />
-                </div>
-              </div>
-              <div className="stamp-badge" style={{ color: "var(--stamp-gold)", borderColor: "var(--stamp-gold)", background: "rgba(217, 119, 6, 0.05)" }}>
-                ↑ 0.3 IMPROVED
-              </div>
-            </div>
-
-            {/* Card 4 */}
-            <div className="vintage-card" style={{ padding: "24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div>
-                  <div style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                    REPOSITORIES INDEXED
-                  </div>
-                  <div style={{ fontSize: "36px", fontWeight: 800, fontFamily: "'Newsreader', serif", marginTop: "4px" }}>
-                    1,420
-                  </div>
-                </div>
-                <div className="postage-stamp-icon" style={{ background: "var(--stamp-teal)" }}>
-                  <Code2 size={18} />
-                </div>
-              </div>
-              <div className="stamp-badge" style={{ color: "var(--stamp-teal)", borderColor: "var(--stamp-teal)", background: "rgba(27, 94, 85, 0.05)" }}>
-                ↓ 2.1% STABLE
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Main 3-Column Newspaper Article Layout */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "32px", alignItems: "start" }}>
