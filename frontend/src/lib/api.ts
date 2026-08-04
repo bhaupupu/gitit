@@ -52,6 +52,7 @@ export interface EngineerProfile extends EngineerCard {
   gaming_warnings: string[] | null;
   interview_questions?: InterviewQuestionsData | null;
   resume_data?: ResumeData | null;
+  file_url?: string | null;
   score_breakdown: ScoreBreakdown | null;
   top_repos: RepoSummary[];
   created_at: string | null;
@@ -80,6 +81,40 @@ export interface PlatformStats {
 }
 
 // ── API Functions ───────────────────────────────────────────────
+
+// ── Persistent Registry Store ─────────────────────────────────────
+const REGISTRY_KEY = "gitit_analyzed_engineers_v2";
+
+export function getLocalRegistryProfiles(): EngineerProfile[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(REGISTRY_KEY);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveProfileToLocalRegistry(profile: EngineerProfile): void {
+  if (typeof window === "undefined" || !profile || !profile.github_username) return;
+  try {
+    const current = getLocalRegistryProfiles();
+    const cleanUsername = profile.github_username.toLowerCase();
+    const index = current.findIndex(
+      (p) => p.github_username.toLowerCase() === cleanUsername || p.id === profile.id
+    );
+    if (index >= 0) {
+      current[index] = { ...current[index], ...profile };
+    } else {
+      current.unshift(profile);
+    }
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify(current));
+  } catch (err) {
+    console.error("Failed to save profile to local registry:", err);
+  }
+}
 
 export async function fetchGitHubFallback(username: string): Promise<EngineerProfile> {
   const userRes = await fetch(`https://api.github.com/users/${username}`);
@@ -136,7 +171,7 @@ export async function fetchGitHubFallback(username: string): Promise<EngineerPro
   const topLangs = Object.keys(primaryLangs).slice(0, 3);
   const langStr = topLangs.join(", ") || "TypeScript, Python";
 
-  return {
+  const profile: EngineerProfile = {
     id: user.login || username,
     github_id: user.id || 10001,
     github_username: user.login || username,
@@ -180,6 +215,9 @@ export async function fetchGitHubFallback(username: string): Promise<EngineerPro
     created_at: user.created_at || new Date().toISOString(),
     last_analyzed_at: new Date().toISOString(),
   };
+
+  saveProfileToLocalRegistry(profile);
+  return profile;
 }
 
 export async function analyzeEngineer(
@@ -189,7 +227,11 @@ export async function analyzeEngineer(
     const res = await fetch(`${API_BASE}/api/analyze/${username}`, {
       method: "POST",
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.profile) saveProfileToLocalRegistry(data.profile);
+      return data;
+    }
   } catch {
     // API server unavailable, execute direct live GitHub REST API fetch
   }
@@ -223,52 +265,90 @@ export async function getEngineers(params: {
       }
     });
     const res = await fetch(`${API_BASE}/api/engineers?${searchParams}`);
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.engineers && data.engineers.length > 0) return data;
+    }
   } catch {
-    // Fallback
+    // Backend offline, fallback to local registry
   }
 
-  // Fallback engineer list
-  const fallbackEngineer = await fetchGitHubFallback(params.query || "octocat").catch(() => null);
-  const card: EngineerCard = fallbackEngineer ? {
-    id: fallbackEngineer.github_username,
-    github_username: fallbackEngineer.github_username,
-    name: fallbackEngineer.name,
-    avatar_url: fallbackEngineer.avatar_url,
-    location: fallbackEngineer.location,
-    talent_score: fallbackEngineer.talent_score,
-    profile_confidence: fallbackEngineer.profile_confidence,
-    archetype: fallbackEngineer.archetype,
-    primary_languages: fallbackEngineer.primary_languages,
-    expertise_areas: fallbackEngineer.expertise_areas,
-    would_hire_score: fallbackEngineer.would_hire_score,
-  } : {
-    id: "octocat",
-    github_username: "octocat",
-    name: "The Octocat",
-    avatar_url: "https://github.com/identicons/octocat.png",
-    location: "San Francisco",
-    talent_score: 88.5,
-    profile_confidence: 0.95,
-    archetype: "Full-Stack Architect",
-    primary_languages: { TypeScript: 60, Python: 40 },
-    expertise_areas: ["TypeScript", "Python"],
-    would_hire_score: 4.5,
-  };
+  // If params.query is specified and not in local registry, try fetching GitHub profile
+  if (params.query && params.query.trim()) {
+    const q = params.query.trim().toLowerCase();
+    const local = getLocalRegistryProfiles();
+    const found = local.find(
+      (p) => p.github_username.toLowerCase() === q || (p.name && p.name.toLowerCase().includes(q))
+    );
+    if (!found) {
+      await fetchGitHubFallback(params.query).catch(() => null);
+    }
+  }
+
+  let allProfiles = getLocalRegistryProfiles();
+
+  // Filter by query
+  if (params.query && params.query.trim()) {
+    const q = params.query.trim().toLowerCase();
+    allProfiles = allProfiles.filter(
+      (p) =>
+        p.github_username.toLowerCase().includes(q) ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.location && p.location.toLowerCase().includes(q)) ||
+        (p.archetype && p.archetype.toLowerCase().includes(q))
+    );
+  }
+
+  // Sort
+  if (params.sort_by === "name") {
+    allProfiles.sort((a, b) => (a.name || a.github_username).localeCompare(b.name || b.github_username));
+  } else {
+    allProfiles.sort((a, b) => (b.talent_score || 0) - (a.talent_score || 0));
+  }
+
+  const page = params.page || 1;
+  const pageSize = params.page_size || 12;
+  const total = allProfiles.length;
+  const totalPages = Math.ceil(total / pageSize) || 1;
+  const pagedProfiles = allProfiles.slice((page - 1) * pageSize, page * pageSize);
+
+  const cards: EngineerCard[] = pagedProfiles.map((p) => ({
+    id: p.id || p.github_username,
+    github_username: p.github_username,
+    name: p.name,
+    avatar_url: p.avatar_url,
+    location: p.location,
+    talent_score: p.talent_score,
+    profile_confidence: p.profile_confidence,
+    archetype: p.archetype,
+    primary_languages: p.primary_languages,
+    expertise_areas: p.expertise_areas,
+    would_hire_score: p.would_hire_score,
+  }));
 
   return {
-    engineers: [card],
-    total: 1,
-    page: 1,
-    page_size: 20,
-    total_pages: 1,
+    engineers: cards,
+    total,
+    page,
+    page_size: pageSize,
+    total_pages: totalPages,
   };
 }
 
 export async function getEngineer(id: string): Promise<EngineerProfile> {
+  const local = getLocalRegistryProfiles();
+  const found = local.find(
+    (p) => p.github_username.toLowerCase() === id.toLowerCase() || p.id === id
+  );
+  if (found) return found;
+
   try {
     const res = await fetch(`${API_BASE}/api/engineers/${id}`);
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      saveProfileToLocalRegistry(data);
+      return data;
+    }
   } catch {
     // Fallback to GitHub API
   }
@@ -276,9 +356,19 @@ export async function getEngineer(id: string): Promise<EngineerProfile> {
 }
 
 export async function getEngineerByUsername(username: string): Promise<EngineerProfile> {
+  const local = getLocalRegistryProfiles();
+  const found = local.find(
+    (p) => p.github_username.toLowerCase() === username.toLowerCase()
+  );
+  if (found) return found;
+
   try {
     const res = await fetch(`${API_BASE}/api/engineers/by-username/${username}`);
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      saveProfileToLocalRegistry(data);
+      return data;
+    }
   } catch {
     // Fallback to GitHub API
   }
@@ -465,6 +555,48 @@ export async function uploadResume(file: File): Promise<ParsedResume> {
   try {
     const existing = JSON.parse(localStorage.getItem("talentlens_resumes") || "[]");
     localStorage.setItem("talentlens_resumes", JSON.stringify([newResume, ...existing]));
+
+    // Construct profile and register in Directory
+    const resumeProfile: EngineerProfile = {
+      id: newResume.id,
+      github_id: 20000 + Math.floor(Math.random() * 80000),
+      github_username: candName.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+      name: candName,
+      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(candName)}`,
+      bio: `Engineering candidate evaluated via resume intelligence. Verified skills in ${parsedResumeData.skills_extracted.slice(0, 4).join(", ")}.`,
+      location: "Verified Candidate",
+      company: "Software Engineer",
+      blog_url: null,
+      email: extractedEmail,
+      followers: 0,
+      following: 0,
+      public_repos: 5,
+      talent_score: Math.round(parsedResumeData.resume_score * 9.5 * 10) / 10,
+      would_hire_score: Math.round((parsedResumeData.resume_score / 2) * 10) / 10,
+      profile_confidence: 0.94,
+      archetype: "Candidate Engineer",
+      primary_languages: { TypeScript: 50, Python: 50 },
+      expertise_areas: parsedResumeData.skills_extracted.slice(0, 3),
+      ai_summary: `Candidate ${candName} evaluated via PDF resume intelligence.`,
+      strengths: parsedResumeData.strengths,
+      growth_areas: parsedResumeData.weaknesses,
+      frameworks: parsedResumeData.skills_extracted,
+      domains: ["Full-Stack Engineering"],
+      gaming_warnings: [],
+      score_breakdown: {
+        technical_depth: parsedResumeData.resume_score,
+        output_quality: parsedResumeData.resume_score,
+        consistency: parsedResumeData.resume_score,
+        collaboration: parsedResumeData.resume_score,
+        specialization: parsedResumeData.resume_score,
+      },
+      top_repos: [],
+      resume_data: parsedResumeData,
+      file_url: dataUrl,
+      created_at: new Date().toISOString(),
+      last_analyzed_at: new Date().toISOString(),
+    };
+    saveProfileToLocalRegistry(resumeProfile);
   } catch {
     // Storage limit
   }
