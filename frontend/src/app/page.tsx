@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { analyzeEngineer, getEngineerByUsername } from "@/lib/api";
 import {
@@ -31,6 +31,10 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setAnalyzing(false);
+  }, []);
+
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     const term = username.trim();
@@ -43,6 +47,7 @@ export default function Home() {
       try {
         const existing = await getEngineerByUsername(term);
         if (existing && existing.github_username) {
+          setAnalyzing(false);
           router.push(`/profile/${existing.github_username}`);
           return;
         }
@@ -51,6 +56,7 @@ export default function Home() {
       }
 
       const result = await analyzeEngineer(term);
+      setAnalyzing(false);
       if (result.profile?.github_username) {
         router.push(`/profile/${result.profile.github_username}`);
       } else if (result.engineer_id) {
@@ -223,8 +229,8 @@ export default function Home() {
             }}
           >
             <div style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", textTransform: "uppercase", fontWeight: 700, color: "var(--stamp-red)", marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
-              <span>TELEGRAM DISPATCH FORM</span>
-              <span>CONFIDENTIAL</span>
+              <span>ENGINEER DOSSIER SEARCH</span>
+              <span>CONFIDENTIAL INTELLIGENCE</span>
             </div>
 
             <form onSubmit={handleAnalyze} style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -233,7 +239,7 @@ export default function Home() {
                 className="input-vintage"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter GitHub username (e.g. torvalds)..."
+                placeholder="Enter GitHub username (e.g. bhaupupu, torvalds)..."
                 disabled={analyzing}
                 style={{ flex: 1, minWidth: "240px" }}
               />
@@ -241,16 +247,16 @@ export default function Home() {
                 type="submit"
                 className="btn-vintage"
                 disabled={analyzing || !username.trim()}
-                style={{ minWidth: "160px" }}
+                style={{ minWidth: "170px" }}
               >
                 {analyzing ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    DISPATCHING...
+                    ANALYZING...
                   </>
                 ) : (
                   <>
-                    <Send size={15} />
+                    <Search size={15} />
                     SEARCH DOSSIER
                   </>
                 )}
