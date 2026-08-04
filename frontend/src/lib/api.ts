@@ -14,11 +14,79 @@ export interface RepoSummary {
   repo_full_name: string;
   repo_url: string | null;
   description: string | null;
+  readme_summary?: string | null;
+  tech_stack?: string[];
   stars: number;
   forks: number;
   language: string | null;
   is_fork: boolean;
   analysis_data: Record<string, unknown> | null;
+}
+
+const COMMON_TECH_KEYWORDS = [
+  "React", "Next.js", "Vue", "Angular", "Svelte", "TypeScript", "JavaScript", "Python",
+  "FastAPI", "Django", "Flask", "Node.js", "Express", "NestJS", "C++", "C#", "Java",
+  "Go", "Rust", "Docker", "Kubernetes", "PostgreSQL", "MongoDB", "Redis", "Tailwind CSS",
+  "Tailwind", "GraphQL", "WebSockets", "OpenAI", "AWS", "Firebase", "Zustand", "Redux", "Prisma",
+  "Neo4j", "Tree-sitter", "Monaco", "REST API", "Postman", "Vercel"
+];
+
+async function fetchRepoReadmeDetails(owner: string, repoName: string, description: string, language: string) {
+  let readmeText = "";
+  try {
+    const rawRes = await fetch(`https://raw.githubusercontent.com/${owner}/${repoName}/main/README.md`);
+    if (rawRes.ok) {
+      readmeText = await rawRes.text();
+    } else {
+      const rawResMaster = await fetch(`https://raw.githubusercontent.com/${owner}/${repoName}/master/README.md`);
+      if (rawResMaster.ok) {
+        readmeText = await rawResMaster.text();
+      }
+    }
+  } catch {
+    // Ignore readme fetch error
+  }
+
+  const fullContent = `${description || ''} ${language || ''} ${readmeText}`;
+
+  const techStack = new Set<string>();
+  if (language) techStack.add(language);
+
+  COMMON_TECH_KEYWORDS.forEach(tech => {
+    const escaped = tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+    if (regex.test(fullContent)) {
+      techStack.add(tech === "Tailwind" ? "Tailwind CSS" : tech);
+    }
+  });
+
+  let summary = "";
+  if (readmeText && readmeText.trim().length > 30) {
+    const clean = readmeText
+      .replace(/!\[.*?\]\(.*?\)/g, "")
+      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+      .replace(/<[^>]*>/g, "")
+      .replace(/^#+\s+/gm, "")
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/[\*\_\~]/g, "")
+      .trim();
+
+    const paragraphs = clean.split(/\n\s*\n/).map(p => p.replace(/\n/g, ' ').trim()).filter(p => p.length > 25);
+    if (paragraphs.length > 0) {
+      summary = paragraphs.slice(0, 2).join(' ').slice(0, 220);
+      if (summary.length >= 220) summary += "...";
+    }
+  }
+
+  if (!summary) {
+    summary = description || `Project repository ${repoName} building software solutions.`;
+  }
+
+  return {
+    readme_summary: summary,
+    tech_stack: Array.from(techStack).slice(0, 6)
+  };
 }
 
 export interface EngineerCard {
@@ -149,16 +217,27 @@ export async function fetchGitHubFallback(username: string): Promise<EngineerPro
     primaryLangs[lang] = Math.round((count / totalReposWithLang) * 100);
   });
 
-  const topRepos: RepoSummary[] = repos.map((r) => ({
-    repo_full_name: r.full_name || `${username}/${r.name}`,
-    repo_url: r.html_url,
-    description: r.description || `Repository ${r.name} containing clean source code architecture.`,
-    stars: r.stargazers_count || 0,
-    forks: r.forks_count || 0,
-    language: r.language || "TypeScript",
-    is_fork: Boolean(r.fork),
-    analysis_data: null,
-  }));
+  const topRepos: RepoSummary[] = await Promise.all(
+    repos.slice(0, 8).map(async (r) => {
+      const repoName = r.name || "repo";
+      const desc = r.description || `Repository ${repoName} containing clean source code architecture.`;
+      const lang = r.language || "TypeScript";
+      const details = await fetchRepoReadmeDetails(username, repoName, desc, lang);
+
+      return {
+        repo_full_name: r.full_name || `${username}/${repoName}`,
+        repo_url: r.html_url,
+        description: desc,
+        readme_summary: details.readme_summary,
+        tech_stack: details.tech_stack,
+        stars: r.stargazers_count || 0,
+        forks: r.forks_count || 0,
+        language: lang,
+        is_fork: Boolean(r.fork),
+        analysis_data: null,
+      };
+    })
+  );
 
   const totalStars = repos.reduce((a, b) => a + (b.stargazers_count || 0), 0);
   const repoCount = repos.length || user.public_repos || 5;

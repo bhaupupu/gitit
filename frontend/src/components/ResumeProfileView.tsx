@@ -312,7 +312,7 @@ export default function ResumeProfileView({ resume, onUpdateResume }: ResumeProf
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {githubProfile.top_repos.slice(0, 4).map((repo, idx) => (
-                      <div key={idx} className="p-4 border-2 border-[#151515] bg-[#FAF3E6]">
+                      <div key={idx} className="p-4 border-2 border-[#151515] bg-[#FAF3E6] flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                           <a
                             href={repo.repo_url || `https://github.com/${repo.repo_full_name}`}
@@ -320,21 +320,31 @@ export default function ResumeProfileView({ resume, onUpdateResume }: ResumeProf
                             rel="noreferrer"
                             className="font-headline text-sm font-bold text-[#151515] hover:underline"
                           >
-                            {repo.repo_full_name}
+                            📁 {repo.repo_full_name}
                           </a>
                           <span className="font-typewriter text-xs font-bold text-[#8C241B]">
                             ★ {repo.stars}
                           </span>
                         </div>
-                        {repo.description && (
-                          <p className="font-body text-xs text-[#4A453E] mt-1.5 leading-relaxed line-clamp-2">
-                            {repo.description}
-                          </p>
+
+                        {(repo.readme_summary || repo.description) && (
+                          <div className="bg-[#8C241B]/5 border-l-2 border-[#8C241B] p-2 text-xs font-body italic text-[#151515] leading-relaxed">
+                            <span className="font-typewriter not-italic text-[10px] font-bold text-[#8C241B] block mb-0.5">
+                              📜 README SUMMARY & BUILD:
+                            </span>
+                            {repo.readme_summary || repo.description}
+                          </div>
                         )}
-                        {repo.language && (
-                          <span className="tag-vintage text-[10px] mt-2">
-                            {repo.language}
-                          </span>
+
+                        {repo.tech_stack && repo.tech_stack.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                            <span className="font-typewriter text-[10px] font-bold text-[#787167]">TECH:</span>
+                            {repo.tech_stack.map((tech, tIdx) => (
+                              <span key={tIdx} className="font-typewriter text-[10px] font-bold px-1.5 py-0.5 bg-[#EADCBF] border border-[#151515] text-[#1B5E55]">
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}

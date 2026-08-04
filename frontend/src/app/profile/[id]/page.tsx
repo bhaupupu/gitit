@@ -554,7 +554,7 @@ export default function ProfilePage({
                 </span>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 {profile.top_repos.slice(0, 8).map((repo, i) => (
                   <a
                     key={i}
@@ -563,9 +563,9 @@ export default function ProfilePage({
                     rel="noopener noreferrer"
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      gap: "16px",
-                      padding: "16px",
+                      flexDirection: "column",
+                      gap: "10px",
+                      padding: "18px",
                       background: "var(--bg-primary)",
                       border: "2px solid var(--border-dark)",
                       textDecoration: "none",
@@ -573,47 +573,98 @@ export default function ProfilePage({
                       boxShadow: "2px 2px 0px var(--border-dark)",
                     }}
                   >
-                    <div style={{ flex: 1 }}>
+                    {/* Header: Repo Name & Stats */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
                       <div
                         style={{
-                          fontSize: "15px",
-                          fontWeight: 700,
+                          fontSize: "16px",
+                          fontWeight: 800,
                           fontFamily: "'Courier Prime', monospace",
                           color: "var(--stamp-red)",
-                          marginBottom: "4px",
                         }}
                       >
-                        {repo.repo_full_name}
+                        📁 {repo.repo_full_name}
                         {repo.is_fork && (
                           <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "8px", fontWeight: 400 }}>
                             (fork)
                           </span>
                         )}
                       </div>
-                      {repo.description && (
-                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                          {repo.description.length > 110
-                            ? repo.description.slice(0, 110) + "..."
-                            : repo.description}
-                        </div>
-                      )}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          fontSize: "12px",
+                          fontFamily: "'Courier Prime', monospace",
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {repo.language && <span className="tag-vintage">{repo.language}</span>}
+                        <span>★ {repo.stars}</span>
+                        <span>🍴 {repo.forks}</span>
+                      </div>
                     </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        fontSize: "12px",
-                        fontFamily: "'Courier Prime', monospace",
-                        fontWeight: 700,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {repo.language && <span className="tag-vintage">{repo.language}</span>}
-                      <span>★ {repo.stars}</span>
-                      <span>🍴 {repo.forks}</span>
-                    </div>
+                    {/* README Summary (What the candidate is building) */}
+                    {(repo.readme_summary || repo.description) && (
+                      <div
+                        style={{
+                          background: "rgba(140, 36, 27, 0.04)",
+                          borderLeft: "3px solid var(--stamp-red)",
+                          padding: "10px 14px",
+                          fontSize: "13px",
+                          color: "var(--text-primary)",
+                          lineHeight: 1.55,
+                          fontFamily: "'Newsreader', serif",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            fontStyle: "normal",
+                            color: "var(--stamp-red)",
+                            fontSize: "11px",
+                            fontFamily: "'Courier Prime', monospace",
+                            display: "block",
+                            marginBottom: "4px",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          📜 README SUMMARY & PROJECT BUILD:
+                        </span>
+                        {repo.readme_summary || repo.description}
+                      </div>
+                    )}
+
+                    {/* Tech Stack Badges */}
+                    {repo.tech_stack && repo.tech_stack.length > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "2px" }}>
+                        <span style={{ fontSize: "11px", fontFamily: "'Courier Prime', monospace", color: "var(--text-secondary)", fontWeight: 800 }}>
+                          TECH STACK:
+                        </span>
+                        {repo.tech_stack.map((tech, tIdx) => (
+                          <span
+                            key={tIdx}
+                            style={{
+                              fontSize: "11px",
+                              fontFamily: "'Courier Prime', monospace",
+                              fontWeight: 700,
+                              padding: "2px 8px",
+                              background: "var(--bg-secondary)",
+                              border: "1px solid var(--border-dark)",
+                              color: "var(--stamp-teal)",
+                              boxShadow: "1px 1px 0px var(--border-dark)",
+                            }}
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </a>
                 ))}
               </div>
