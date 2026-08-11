@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getEngineer, parseResumeText, type EngineerProfile } from "@/lib/api";
 import AdaptiveInterviewWorkspace from "@/components/AdaptiveInterviewWorkspace";
 import JobMatchModal from "@/components/JobMatchModal";
@@ -203,13 +204,36 @@ export default function ProfilePage({
           justifyContent: "space-between",
         }}
       >
-        <button
-          onClick={() => router.back()}
-          className="btn-vintage-outline"
-          style={{ fontSize: "12px", padding: "6px 14px" }}
-        >
-          ← RETURN
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <Link href="/" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                border: "2px solid var(--border-dark)",
+                background: "var(--stamp-red)",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "20px",
+                fontWeight: 900,
+                boxShadow: "2px 2px 0px var(--border-dark)",
+                flexShrink: 0,
+              }}
+            >
+              T
+            </div>
+          </Link>
+          <button
+            onClick={() => router.back()}
+            className="btn-vintage-outline"
+            style={{ fontSize: "12px", padding: "6px 14px" }}
+          >
+            ← RETURN
+          </button>
+        </div>
         <div style={{ textAlign: "center" }}>
           <span className="font-headline" style={{ fontSize: "20px", fontWeight: 800, textTransform: "uppercase" }}>
             {profile.name || profile.github_username}
