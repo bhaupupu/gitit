@@ -31,6 +31,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/icon.png?v=2" type="image/png" sizes="any" />
+        <link rel="icon" href="/icon.svg?v=2" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/favicon.ico?v=2" />
+        <link rel="apple-touch-icon" href="/icon.png?v=2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&display=swap" rel="stylesheet" />
