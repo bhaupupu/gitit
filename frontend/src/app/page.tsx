@@ -128,11 +128,13 @@ export default function Home() {
         <p
           style={{
             fontFamily: "'Courier Prime', monospace",
-            fontSize: "12px",
+            fontSize: "16px",
+            fontWeight: 700,
             color: "var(--text-secondary)",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            marginTop: "6px",
+            marginTop: "8px",
+            marginBottom: "4px",
           }}
         >
           All The Code That&apos;s Fit To Score • Special Edition • Saturday, August 1, 2026
@@ -146,25 +148,25 @@ export default function Home() {
           style={{
             display: "flex",
             justifyContent: "center",
-            gap: "40px",
-            fontSize: "16px",
+            gap: "48px",
+            fontSize: "22px",
             fontFamily: "'Courier Prime', monospace",
-            fontWeight: 800,
+            fontWeight: 900,
             textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            padding: "8px 0",
+            letterSpacing: "0.14em",
+            padding: "12px 0",
           }}
         >
-          <a href="#" style={{ color: "var(--text-primary)", textDecoration: "none", fontSize: "16px", fontWeight: 800 }}>[ DASHBOARD ]</a>
+          <a href="#" style={{ color: "var(--text-primary)", textDecoration: "none", fontSize: "22px", fontWeight: 900 }}>[ DASHBOARD ]</a>
           <button
             onClick={() => router.push("/search")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)" }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "22px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--text-primary)" }}
           >
             [ DIRECTORY ]
           </button>
           <button
             onClick={() => router.push("/resumes")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "16px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-primary)" }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Courier Prime', monospace", fontSize: "22px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--text-primary)" }}
           >
             [ RESUME ]
           </button>
