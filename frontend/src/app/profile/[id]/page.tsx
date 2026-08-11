@@ -207,20 +207,11 @@ export default function ProfilePage({
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
             <div
+              className="logo-t-box"
               style={{
                 width: 36,
                 height: 36,
-                border: "2px solid var(--border-dark)",
-                background: "var(--stamp-red)",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "'Playfair Display', serif",
                 fontSize: "20px",
-                fontWeight: 900,
-                boxShadow: "2px 2px 0px var(--border-dark)",
-                flexShrink: 0,
               }}
             >
               T

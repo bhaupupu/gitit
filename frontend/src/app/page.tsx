@@ -101,19 +101,11 @@ export default function Home() {
         {/* Newspaper Title */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: "16px", marginBottom: "8px" }}>
           <div
+            className="logo-t-box"
             style={{
-              width: 44,
-              height: 44,
-              border: "2px solid var(--border-dark)",
-              background: "var(--stamp-red)",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "24px",
-              fontWeight: 900,
-              boxShadow: "2px 2px 0px var(--border-dark)",
+              width: 46,
+              height: 46,
+              fontSize: "26px",
             }}
           >
             T

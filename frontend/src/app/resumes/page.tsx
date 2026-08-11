@@ -78,20 +78,11 @@ export default function ResumesPage() {
             }}
           >
             <div
+              className="logo-t-box"
               style={{
                 width: 38,
                 height: 38,
-                border: "2px solid var(--border-dark)",
-                background: "var(--stamp-red)",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "20px",
-                fontWeight: 900,
-                boxShadow: "2px 2px 0px var(--border-dark)",
-                flexShrink: 0,
+                fontSize: "21px",
               }}
             >
               T
