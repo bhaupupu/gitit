@@ -5,6 +5,15 @@ export const metadata: Metadata = {
   title: "GETIT",
   description:
     "Discover exceptional engineers through deep GitHub analysis. AI-powered profiles, evidence-based scoring, and actionable hiring intelligence.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
   keywords: [
     "talent intelligence",
     "github analysis",
